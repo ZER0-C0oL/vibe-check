@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>This You?</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <style>
+    .prompt-card {
+      background: linear-gradient(135deg, #e17055, #fdcb6e);
+      color: #fff;
+      padding: 2rem;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: scaleIn 0.4s ease both;
+      box-shadow: 0 8px 30px rgba(225, 112, 85, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .prompt-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .prompt-card span { position: relative; z-index: 1; }
+    .current-player-banner {
+      background: linear-gradient(135deg, var(--accent), #fdcb6e);
+      color: var(--text);
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      animation: fadeInUp 0.3s ease both;
+    }
+    .vote-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .vote-option {
+      flex: 1 1 calc(50% - 0.3rem);
+      min-width: 120px;
+      padding: 0.85rem 1rem;
+      border: 2px solid #dfe6e9;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.85);
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: var(--font);
+      font-size: 0.95rem;
+      transition: all 0.25s ease;
+    }
+    .vote-option:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+    .vote-option.selected {
+      border-color: var(--primary);
+      background: var(--gradient-primary);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(108,92,231,0.25);
+    }
+    .results-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1rem;
+      background: rgba(255,255,255,0.85);
+      border-radius: var(--radius-sm);
+      animation: fadeInUp 0.3s ease both;
+    }
+    .result-row .name { font-weight: 600; min-width: 80px; }
+    .result-bar-wrap { flex: 1; height: 24px; background: #f0f0f0; border-radius: 12px; overflow: hidden; }
+    .result-bar {
+      height: 100%;
+      background: var(--gradient-primary);
+      border-radius: 12px;
+      transition: width 0.6s cubic-bezier(.4,0,.2,1);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+      min-width: fit-content;
+    }
+    .crown { font-size: 1.3rem; margin-left: auto; }
+    .skip-btn {
+      background: none;
+      border: 2px solid rgba(108,92,231,0.3);
+      color: var(--text-light);
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .skip-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .phase1-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .phase1-actions .btn { flex: 1; }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="game-page">
+    <div class="game-header">
+      <h1>🫵 This You?</h1>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='../games.html'">← Back</button>
+    </div>
+
+    <!-- Phase 1: Show Prompt -->
+    <div id="phase1">
+      <div class="prompt-card" id="promptDisplay"><span>Loading...</span></div>
+      <p class="text-center mb-3" style="color: var(--text-light);">
+        Each player votes on who fits this prompt best. Pass the device after each vote!
+      </p>
+      <div class="phase1-actions">
+        <button class="btn btn-primary" onclick="startVoting()">🎯 Start Voting</button>
+        <button class="skip-btn" onclick="skipPrompt()">⏭ Skip Prompt</button>
+      </div>
+    </div>
+
+    <!-- Phase 2: Vote -->
+    <div id="phase2" class="hidden">
+      <div class="prompt-card" id="promptReminder" style="font-size: 1rem; padding: 1.25rem;"><span></span></div>
+      <div class="current-player-banner" id="voterBanner"></div>
+      <div class="vote-grid" id="voteGrid"></div>
+      <button class="btn btn-primary btn-block hidden" id="confirmBtn" onclick="confirmVote()">Lock In & Pass Device</button>
+    </div>
+
+    <!-- Phase 3: Results -->
+    <div id="phase3" class="hidden">
+      <div class="prompt-card" id="promptResult" style="font-size: 1rem; padding: 1.25rem;"><span></span></div>
+      <h2 class="text-center mb-2">📊 Vote Results</h2>
+      <div class="results-list" id="resultsList"></div>
+      <button class="btn btn-secondary btn-block mt-3" onclick="nextRound()">🔄 Next Prompt</button>
+      <button class="btn btn-outline btn-block mt-2" onclick="window.location.href='../games.html'">← Back to Games</button>
+    </div>
+  </div>
+
+  <script src="../js/state.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/prompts.js"></script>
+  <script>
+    const PROMPTS = GAME_PROMPTS['this-you'];
+    const participants = getParticipants();
+    let currentPrompt = '';
+    let currentVoterIndex = 0;
+    let currentChoice = null;
+    let votes = []; // { voter, target }
+    let usedPrompts = [];
+
+    function setPhase(n) {
+      [1,2,3].forEach(p => document.getElementById(`phase${p}`).classList.toggle('hidden', p !== n));
+    }
+    function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    function pickPrompt() {
+      const avail = PROMPTS.filter(p => !usedPrompts.includes(p));
+      if (avail.length === 0) usedPrompts = [];
+      const pool = avail.length > 0 ? avail : PROMPTS;
+      const pick = getRandomItem(pool);
+      usedPrompts.push(pick);
+      return pick;
+    }
+
+    function loadPrompt() {
+      currentPrompt = pickPrompt();
+      document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
+    }
+
+    function skipPrompt() { loadPrompt(); }
+
+    function startVoting() {
+      votes = [];
+      currentVoterIndex = 0;
+      currentChoice = null;
+      setPhase(2);
+      showVoter();
+    }
+
+    function showVoter() {
+      if (currentVoterIndex >= participants.length) { showResults(); return; }
+      const player = participants[currentVoterIndex];
+      document.getElementById('promptReminder').querySelector('span').textContent = `"${currentPrompt}"`;
+      document.getElementById('voterBanner').textContent = `🗳️ ${player.name}'s turn — who fits this best?`;
+      currentChoice = null;
+      document.getElementById('confirmBtn').classList.add('hidden');
+
+      const grid = document.getElementById('voteGrid');
+      grid.innerHTML = participants.map((p, i) => `
+        <button class="vote-option" onclick="selectTarget(${i}, this)">${escapeHTML(p.name)}</button>
+      `).join('');
+    }
+
+    function selectTarget(idx, btn) {
+      currentChoice = participants[idx].name;
+      document.querySelectorAll('.vote-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('confirmBtn').classList.remove('hidden');
+    }
+
+    function confirmVote() {
+      if (!currentChoice) return;
+      votes.push({ voter: participants[currentVoterIndex].name, target: currentChoice });
+      currentVoterIndex++;
+      showVoter();
+    }
+
+    function showResults() {
+      setPhase(3);
+      document.getElementById('promptResult').querySelector('span').textContent = `"${currentPrompt}"`;
+
+      // Tally
+      const tally = {};
+      participants.forEach(p => tally[p.name] = 0);
+      votes.forEach(v => { tally[v.target] = (tally[v.target] || 0) + 1; });
+
+      const total = votes.length;
+      const sorted = Object.entries(tally).sort((a,b) => b[1] - a[1]);
+      const maxVotes = sorted[0][1];
+
+      // Save scores — each vote received = 1 point
+      const roundScores = {};
+      participants.forEach(p => roundScores[p.name] = tally[p.name] || 0);
+      saveGameScores('this-you', roundScores);
+
+      const list = document.getElementById('resultsList');
+      list.innerHTML = sorted.map(([name, count], i) => {
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        const crown = count === maxVotes && count > 0 ? '<span class="crown">👑</span>' : '';
+        return `<div class="result-row" style="animation-delay: ${i * 0.08}s">
+          <span class="name">${escapeHTML(name)}</span>
+          <div class="result-bar-wrap">
+            <div class="result-bar" style="width: ${Math.max(pct, 8)}%">${count} vote${count !== 1 ? 's' : ''}</div>
+          </div>
+          ${crown}
+        </div>`;
+      }).join('');
+    }
+
+    function nextRound() {
+      loadPrompt();
+      setPhase(1);
+    }
+
+    // Init
+    loadPrompt();
+  </script>
+</body>
+</html>

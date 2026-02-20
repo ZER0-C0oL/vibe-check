@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lobby – Party Games Hub</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    .lobby-wrapper {
+      width: 100%;
+      max-width: 520px;
+      animation: fadeInUp 0.5s ease both;
+    }
+    .lobby-header h1 {
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .form-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+    .form-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+    .count-badge {
+      background: var(--gradient-primary);
+      color: #fff;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    }
+    .count-badge.bump {
+      animation: bounceIn 0.4s ease;
+    }
+    .empty-state {
+      text-align: center;
+      color: var(--text-light);
+      padding: 2rem 1rem;
+      font-size: 0.95rem;
+    }
+    .players-header {
+      animation: fadeInUp 0.5s ease 0.2s both;
+    }
+    .participant-list {
+      animation: fadeIn 0.5s ease 0.3s both;
+    }
+
+    @media (max-width: 500px) {
+      .form-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="lobby-wrapper">
+    <!-- Header -->
+    <div class="text-center mb-3 lobby-header">
+      <h1 id="partyTitle">Let's Party 🎉</h1>
+      <p style="color: var(--text-light); margin-top: 0.25rem;">Add your crew below</p>
+    </div>
+
+    <!-- Add Participant Form -->
+    <div class="card mb-3">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nameInput">Name</label>
+          <input type="text" id="nameInput" placeholder="Enter name..." maxlength="30" />
+        </div>
+        <div class="form-group" style="flex: 0.6;">
+          <label for="genderSelect">Gender</label>
+          <select id="genderSelect">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-block mt-2" onclick="handleAddParticipant()">
+        ➕ Add Participant
+      </button>
+    </div>
+
+    <!-- Participants List -->
+    <div class="flex flex-between players-header" style="align-items: center; margin-bottom: 0.75rem;">
+      <h2>Players</h2>
+      <span class="count-badge" id="countBadge">0</span>
+    </div>
+
+    <ul class="participant-list" id="participantList">
+      <li class="empty-state" id="emptyState">No players yet — add someone above!</li>
+    </ul>
+
+    <!-- Continue Button -->
+    <button class="btn btn-primary btn-block mt-3" onclick="continueTo()">
+      🎮 Continue to Games
+    </button>
+
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script>
+    const nameInput = document.getElementById('nameInput');
+    const genderSelect = document.getElementById('genderSelect');
+    const participantList = document.getElementById('participantList');
+    const countBadge = document.getElementById('countBadge');
+    const emptyState = document.getElementById('emptyState');
+
+    // Set party title
+    document.getElementById('partyTitle').textContent = getPartyTitle();
+
+    // Render participant list
+    function renderParticipants() {
+      const participants = getParticipants();
+      countBadge.textContent = participants.length;
+
+      if (participants.length === 0) {
+        participantList.innerHTML = '<li class="empty-state">No players yet — add someone above!</li>';
+        return;
+      }
+
+      participantList.innerHTML = participants.map((p, i) => `
+        <li class="participant-item">
+          <span>${escapeHTML(p.name)} <small style="color: var(--text-light);">(${p.gender})</small></span>
+          <button class="remove-btn" onclick="handleRemove(${i})" title="Remove">✕</button>
+        </li>
+      `).join('');
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function handleAddParticipant() {
+      const name = nameInput.value.trim();
+      if (!name) {
+        nameInput.focus();
+        return;
+      }
+      addParticipant({ name, gender: genderSelect.value });
+      nameInput.value = '';
+      nameInput.focus();
+      renderParticipants();
+      // Bump badge animation
+      countBadge.classList.remove('bump');
+      void countBadge.offsetWidth;
+      countBadge.classList.add('bump');
+    }
+
+    function handleRemove(index) {
+      removeParticipant(index);
+      renderParticipants();
+    }
+
+    function continueTo() {
+      const participants = getParticipants();
+      if (participants.length === 0) {
+        alert('Add at least one participant to continue!');
+        return;
+      }
+      navigateTo('games.html');
+    }
+
+    // Allow Enter key to add
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAddParticipant();
+    });
+
+    // Initial render
+    renderParticipants();
+  </script>
+</body>
+</html>

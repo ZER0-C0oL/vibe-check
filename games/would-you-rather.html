@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Would You Rather?</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <style>
+    .wyr-card {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      animation: scaleIn 0.4s ease both;
+    }
+    .wyr-option {
+      flex: 1;
+      padding: 1.5rem 1rem;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 700;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+    }
+    .wyr-option.option-a {
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff;
+      box-shadow: 0 6px 25px rgba(108, 92, 231, 0.25);
+    }
+    .wyr-option.option-b {
+      background: linear-gradient(135deg, #e84393, #fd79a8);
+      color: #fff;
+      box-shadow: 0 6px 25px rgba(232, 67, 147, 0.25);
+    }
+    .wyr-option::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .wyr-option span { position: relative; z-index: 1; }
+    .wyr-vs {
+      display: flex;
+      align-items: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--text-light);
+    }
+    .current-player-banner {
+      background: linear-gradient(135deg, var(--accent), #fdcb6e);
+      color: var(--text);
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      animation: fadeInUp 0.3s ease both;
+    }
+    .vote-options {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .vote-choice {
+      flex: 1;
+      padding: 1rem;
+      border: 3px solid transparent;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 1rem;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+    .vote-choice.choice-a {
+      background: rgba(108,92,231,0.1);
+      color: #6c5ce7;
+      border-color: rgba(108,92,231,0.3);
+    }
+    .vote-choice.choice-a:hover, .vote-choice.choice-a.selected {
+      background: #6c5ce7;
+      color: #fff;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(108,92,231,0.3);
+    }
+    .vote-choice.choice-b {
+      background: rgba(232,67,147,0.1);
+      color: #e84393;
+      border-color: rgba(232,67,147,0.3);
+    }
+    .vote-choice.choice-b:hover, .vote-choice.choice-b.selected {
+      background: #e84393;
+      color: #fff;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(232,67,147,0.3);
+    }
+    .result-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+    }
+    .result-bar-item {
+      animation: fadeInUp 0.4s ease both;
+    }
+    .result-bar-item .label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.3rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    .bar-track {
+      height: 32px;
+      background: #f0f0f0;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 16px;
+      transition: width 0.8s cubic-bezier(.4,0,.2,1);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .bar-fill.fill-a { background: var(--gradient-primary); }
+    .bar-fill.fill-b { background: linear-gradient(135deg, #e84393, #fd79a8); }
+    .voter-names {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-top: 0.2rem;
+    }
+    .skip-btn {
+      background: none;
+      border: 2px solid rgba(108,92,231,0.3);
+      color: var(--text-light);
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .skip-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .phase1-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .phase1-actions .btn { flex: 1; }
+    @media (max-width: 500px) {
+      .wyr-card { flex-direction: column; }
+      .wyr-vs { justify-content: center; }
+      .vote-options { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="game-page">
+    <div class="game-header">
+      <h1>🤔 Would You Rather?</h1>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='../games.html'">← Back</button>
+    </div>
+
+    <!-- Phase 1: Show Options -->
+    <div id="phase1">
+      <div class="wyr-card" id="wyrCard">
+        <div class="wyr-option option-a"><span id="optionADisplay"></span></div>
+        <div class="wyr-vs">OR</div>
+        <div class="wyr-option option-b"><span id="optionBDisplay"></span></div>
+      </div>
+      <p class="text-center mb-3" style="color: var(--text-light);">
+        Each player picks one option. Pass the device after voting!
+      </p>
+      <div class="phase1-actions">
+        <button class="btn btn-primary" onclick="startVoting()">🎯 Start Voting</button>
+        <button class="skip-btn" onclick="skipPrompt()">⏭ Skip Question</button>
+      </div>
+    </div>
+
+    <!-- Phase 2: Voting -->
+    <div id="phase2" class="hidden">
+      <div class="wyr-card" id="wyrReminder" style="margin-bottom: 1rem;">
+        <div class="wyr-option option-a" style="padding: 1rem; font-size: 0.9rem;"><span id="optionARemind"></span></div>
+        <div class="wyr-vs">OR</div>
+        <div class="wyr-option option-b" style="padding: 1rem; font-size: 0.9rem;"><span id="optionBRemind"></span></div>
+      </div>
+      <div class="current-player-banner" id="voterBanner"></div>
+      <div class="vote-options">
+        <button class="vote-choice choice-a" id="voteA" onclick="castVote('A', this)"></button>
+        <button class="vote-choice choice-b" id="voteB" onclick="castVote('B', this)"></button>
+      </div>
+      <button class="btn btn-primary btn-block hidden" id="confirmBtn" onclick="confirmVote()">Lock In & Pass Device</button>
+    </div>
+
+    <!-- Phase 3: Results -->
+    <div id="phase3" class="hidden">
+      <div class="wyr-card" id="wyrResult" style="margin-bottom: 1rem;">
+        <div class="wyr-option option-a" style="padding: 1rem; font-size: 0.9rem;"><span id="optionAResult"></span></div>
+        <div class="wyr-vs">OR</div>
+        <div class="wyr-option option-b" style="padding: 1rem; font-size: 0.9rem;"><span id="optionBResult"></span></div>
+      </div>
+      <h2 class="text-center mb-2">📊 Results</h2>
+      <div class="result-bars" id="resultBars"></div>
+      <button class="btn btn-secondary btn-block mt-3" onclick="nextRound()">🔄 Next Question</button>
+      <button class="btn btn-outline btn-block mt-2" onclick="window.location.href='../games.html'">← Back to Games</button>
+    </div>
+  </div>
+
+  <script src="../js/state.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/prompts.js"></script>
+  <script>
+    const PROMPTS = GAME_PROMPTS['would-you-rather'];
+    const participants = getParticipants();
+    let currentQ = null;
+    let currentVoterIndex = 0;
+    let currentChoice = null;
+    let votes = [];
+    let usedIndices = [];
+
+    function setPhase(n) {
+      [1,2,3].forEach(p => document.getElementById(`phase${p}`).classList.toggle('hidden', p !== n));
+    }
+    function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    function pickQuestion() {
+      const avail = PROMPTS.map((q, i) => i).filter(i => !usedIndices.includes(i));
+      if (avail.length === 0) usedIndices = [];
+      const pool = avail.length > 0 ? avail : PROMPTS.map((q, i) => i);
+      const idx = getRandomItem(pool);
+      usedIndices.push(idx);
+      return PROMPTS[idx];
+    }
+
+    function loadQuestion() {
+      currentQ = pickQuestion();
+      document.getElementById('optionADisplay').textContent = currentQ.optionA;
+      document.getElementById('optionBDisplay').textContent = currentQ.optionB;
+    }
+
+    function skipPrompt() { loadQuestion(); }
+
+    function startVoting() {
+      votes = [];
+      currentVoterIndex = 0;
+      currentChoice = null;
+      document.getElementById('optionARemind').textContent = currentQ.optionA;
+      document.getElementById('optionBRemind').textContent = currentQ.optionB;
+      document.getElementById('voteA').textContent = currentQ.optionA;
+      document.getElementById('voteB').textContent = currentQ.optionB;
+      setPhase(2);
+      showVoter();
+    }
+
+    function showVoter() {
+      if (currentVoterIndex >= participants.length) { showResults(); return; }
+      const player = participants[currentVoterIndex];
+      document.getElementById('voterBanner').textContent = `🗳️ ${player.name}'s turn`;
+      currentChoice = null;
+      document.getElementById('confirmBtn').classList.add('hidden');
+      document.querySelectorAll('.vote-choice').forEach(b => b.classList.remove('selected'));
+    }
+
+    function castVote(choice, btn) {
+      currentChoice = choice;
+      document.querySelectorAll('.vote-choice').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('confirmBtn').classList.remove('hidden');
+    }
+
+    function confirmVote() {
+      if (!currentChoice) return;
+      votes.push({ name: participants[currentVoterIndex].name, vote: currentChoice });
+      currentVoterIndex++;
+      showVoter();
+    }
+
+    function showResults() {
+      setPhase(3);
+      document.getElementById('optionAResult').textContent = currentQ.optionA;
+      document.getElementById('optionBResult').textContent = currentQ.optionB;
+
+      const aVoters = votes.filter(v => v.vote === 'A').map(v => v.name);
+      const bVoters = votes.filter(v => v.vote === 'B').map(v => v.name);
+      const total = votes.length;
+      const aPct = total > 0 ? Math.round((aVoters.length / total) * 100) : 0;
+      const bPct = total > 0 ? Math.round((bVoters.length / total) * 100) : 0;
+
+      // Majority voters get a point
+      const majorityChoice = aVoters.length >= bVoters.length ? 'A' : 'B';
+      const roundScores = {};
+      participants.forEach(p => roundScores[p.name] = 0);
+      votes.filter(v => v.vote === majorityChoice).forEach(v => { roundScores[v.name] = 1; });
+      saveGameScores('would-you-rather', roundScores);
+
+      document.getElementById('resultBars').innerHTML = `
+        <div class="result-bar-item" style="animation-delay: 0s">
+          <div class="label">
+            <span>${escapeHTML(currentQ.optionA)}</span>
+            <span>${aPct}%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill fill-a" style="width: ${Math.max(aPct, 5)}%">${aVoters.length}</div></div>
+          <div class="voter-names">${aVoters.length > 0 ? aVoters.map(n => escapeHTML(n)).join(', ') : 'No votes'}</div>
+        </div>
+        <div class="result-bar-item" style="animation-delay: 0.1s">
+          <div class="label">
+            <span>${escapeHTML(currentQ.optionB)}</span>
+            <span>${bPct}%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill fill-b" style="width: ${Math.max(bPct, 5)}%">${bVoters.length}</div></div>
+          <div class="voter-names">${bVoters.length > 0 ? bVoters.map(n => escapeHTML(n)).join(', ') : 'No votes'}</div>
+        </div>
+      `;
+    }
+
+    function nextRound() {
+      loadQuestion();
+      setPhase(1);
+    }
+
+    // Init
+    loadQuestion();
+  </script>
+</body>
+</html>

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whose Brain Is This?</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <style>
+    .phase-indicator {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .phase-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #dfe6e9;
+      transition: background 0.4s ease, transform 0.4s ease, box-shadow 0.4s ease;
+    }
+    .phase-dot.active {
+      background: var(--primary);
+      transform: scale(1.3);
+      box-shadow: 0 0 8px rgba(108, 92, 231, 0.4);
+    }
+    .prompt-card {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      padding: 2rem;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: scaleIn 0.4s ease both;
+      box-shadow: 0 8px 30px rgba(108, 92, 231, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .prompt-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .prompt-card span {
+      position: relative;
+      z-index: 1;
+    }
+    .current-player-banner {
+      background: linear-gradient(135deg, var(--accent), #fdcb6e);
+      color: var(--text);
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      animation: fadeInUp 0.3s ease both;
+      box-shadow: 0 2px 12px rgba(253, 203, 110, 0.3);
+    }
+    textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      font-family: var(--font);
+      border: 2px solid #dfe6e9;
+      border-radius: var(--radius-sm);
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.12);
+    }
+
+    /* === Match the Following Styles === */
+    .phase3-layout {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      min-height: 0;
+    }
+    .phase3-left {
+      flex: 3;
+      min-width: 0;
+    }
+    .phase3-right {
+      flex: 2;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: sticky;
+      top: 1rem;
+    }
+    .match-container {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0;
+      align-items: flex-start;
+    }
+    .match-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+    .match-column-header {
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-light);
+      margin-bottom: 0.15rem;
+      text-align: center;
+    }
+    .match-item {
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(.4,0,.2,1);
+      border: 2px solid transparent;
+      position: relative;
+      user-select: none;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+    }
+    .match-answer {
+      background: linear-gradient(135deg, rgba(241, 240, 255, 0.9), rgba(237, 233, 254, 0.7));
+      border-color: #e0deff;
+    }
+    .match-answer:hover {
+      border-color: var(--primary-light);
+      transform: translateX(3px);
+      box-shadow: 0 2px 10px rgba(108, 92, 231, 0.15);
+    }
+    .match-answer.active {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, #e3e0ff, #d5d0ff);
+      box-shadow: 0 2px 15px rgba(108, 92, 231, 0.25);
+      transform: scale(1.02);
+    }
+    .match-answer.matched {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .match-name {
+      background: linear-gradient(135deg, rgba(253, 243, 205, 0.8), rgba(254, 234, 167, 0.6));
+      border-color: #fde9a7;
+      text-align: center;
+      font-weight: 600;
+    }
+    .match-name:hover {
+      border-color: #fdcb6e;
+      transform: translateX(-3px);
+      box-shadow: 0 2px 10px rgba(253, 203, 110, 0.25);
+    }
+    .match-name.active {
+      border-color: #fdcb6e;
+      background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+      box-shadow: 0 2px 15px rgba(253, 203, 110, 0.35);
+      transform: scale(1.02);
+    }
+    .match-name.matched {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .match-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 0.5rem;
+      flex-shrink: 0;
+    }
+    .match-answer-text {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.3rem;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .match-answer-text > span:not(.match-label):not(.match-badge) {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .match-badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: var(--gradient-primary);
+      color: #fff;
+      margin-left: auto;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Pairs display */
+    .matched-pairs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .matched-pairs-header {
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-bottom: 0.15rem;
+    }
+    .matched-pair {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(0, 184, 148, 0.08), rgba(0, 184, 148, 0.04));
+      border: 1px solid rgba(0, 184, 148, 0.2);
+      animation: fadeInUp 0.3s ease both;
+      font-size: 0.9rem;
+    }
+    .matched-pair .pair-label {
+      font-weight: 600;
+      color: var(--primary);
+      min-width: 24px;
+    }
+    .matched-pair .pair-arrow {
+      color: var(--success);
+      font-weight: 700;
+    }
+    .matched-pair .pair-name {
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .matched-pair .remove-match {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.1rem 0.3rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .matched-pair .remove-match:hover {
+      background: rgba(214, 48, 49, 0.1);
+    }
+
+    /* === Results Phase — Tabular Cards === */
+    .results-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .result-card {
+      flex: 1 1 calc(50% - 0.375rem);
+      min-width: 280px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: var(--shadow);
+      animation: fadeInUp 0.4s ease both;
+    }
+    .result-card-header {
+      padding: 0.75rem 1rem;
+      background: linear-gradient(135deg, rgba(241,240,255,0.7), rgba(237,233,254,0.5));
+      border-bottom: 1px solid rgba(108,92,231,0.1);
+    }
+    .result-card-header .answer-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text);
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.4;
+    }
+    .result-card-header .answer-author {
+      font-size: 0.8rem;
+      color: var(--primary);
+      font-weight: 600;
+      margin-top: 0.25rem;
+    }
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .result-table th,
+    .result-table td {
+      padding: 0.45rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .result-table th {
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      background: rgba(0,0,0,0.02);
+    }
+    .result-table tr:last-child td {
+      border-bottom: none;
+    }
+    .result-table .correct-cell {
+      color: var(--success);
+      font-weight: 600;
+    }
+    .result-table .wrong-cell {
+      color: var(--danger);
+    }
+
+    .score-board {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      background: linear-gradient(135deg, rgba(241, 240, 255, 0.9), rgba(237, 233, 254, 0.7));
+      border-radius: var(--radius-sm);
+      animation: slideInLeft 0.4s ease both;
+      transition: transform 0.2s ease;
+    }
+    .score-row:hover {
+      transform: translateX(4px);
+    }
+    .score-row:nth-child(1) {
+      background: linear-gradient(135deg, rgba(255, 234, 167, 0.6), rgba(253, 203, 110, 0.4));
+      font-size: 1.05rem;
+    }
+    .score-row .points {
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .phase3-layout {
+        flex-direction: column;
+      }
+      .phase3-right {
+        position: static;
+      }
+      .result-card {
+        flex: 1 1 100%;
+      }
+    }
+    @media (max-width: 500px) {
+      .match-container {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .match-item {
+        font-size: 0.82rem;
+        padding: 0.5rem 0.6rem;
+      }
+      .result-table {
+        font-size: 0.78rem;
+      }
+      .result-table th,
+      .result-table td {
+        padding: 0.35rem 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="game-page" style="max-width: 960px;">
+    <!-- Header -->
+    <div class="game-header">
+      <h1>🧠 Whose Brain Is This?</h1>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='../games.html'">← Back</button>
+    </div>
+
+    <!-- Phase dots -->
+    <div class="phase-indicator" id="phaseDots">
+      <div class="phase-dot active"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+      <div class="phase-dot"></div>
+    </div>
+
+    <!-- Phase 1: Show Prompt -->
+    <div id="phase1">
+      <div class="prompt-card" id="promptDisplay"><span>Loading prompt...</span></div>
+      <p class="text-center mb-3" style="color: var(--text-light);">
+        Each player will type their answer one at a time. Pass the device after each turn!
+      </p>
+      <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" style="flex:1" onclick="startCollecting()">Ready — Start Collecting Answers</button>
+        <button style="background:none; border:2px solid rgba(108,92,231,0.3); color:var(--text-light); padding:0.4rem 1rem; border-radius:var(--radius-sm); cursor:pointer; font-family:var(--font); font-size:0.85rem; transition:all 0.2s ease;" onclick="skipPrompt()">⏭ Skip</button>
+      </div>
+    </div>
+
+    <!-- Phase 2: Collect Answers -->
+    <div id="phase2" class="hidden">
+      <div class="prompt-card" id="promptReminder" style="font-size: 1rem; padding: 1rem;"><span></span></div>
+      <div class="current-player-banner" id="currentPlayerBanner"></div>
+      <textarea id="answerInput" placeholder="Type your answer here..."></textarea>
+      <button class="btn btn-secondary btn-block mt-2" onclick="submitAnswer()">Submit & Pass Device</button>
+    </div>
+
+    <!-- Phase 3: Match the Following -->
+    <div id="phase3" class="hidden">
+      <div class="prompt-card" id="promptMatch" style="font-size: 0.95rem; padding: 0.75rem 1rem; min-height: auto; margin-bottom: 0.75rem;"><span></span></div>
+      <div class="current-player-banner" id="matcherBanner" style="margin-bottom: 0.75rem;"></div>
+
+      <p class="mb-2" style="font-weight: 600; text-align: center; font-size: 0.9rem;">Match each answer to who you think wrote it</p>
+
+      <div class="phase3-layout">
+        <div class="phase3-left">
+          <div class="match-container">
+            <div class="match-column" id="answersColumn">
+              <div class="match-column-header">📝 Answers</div>
+            </div>
+            <div class="match-column" id="namesColumn">
+              <div class="match-column-header">👤 Players</div>
+            </div>
+          </div>
+        </div>
+        <div class="phase3-right">
+          <div class="matched-pairs" id="matchedPairsDisplay"></div>
+          <button class="btn btn-primary btn-block hidden" id="submitMatchBtn" onclick="submitMatches()">
+            🔒 Lock In & Pass Device
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4: Results -->
+    <div id="phase4" class="hidden">
+      <h2 class="text-center mb-3" style="animation: bounceIn 0.6s ease both;">🏆 Results</h2>
+
+      <h3 class="mb-2" style="animation: fadeInUp 0.4s ease 0.1s both;">Answers Revealed — Who Got Whose Right?</h3>
+      <div class="results-grid" id="revealedAnswers"></div>
+
+      <h3 class="mb-2 mt-3" style="animation: fadeInUp 0.4s ease 0.2s both;">Scoreboard</h3>
+      <div class="score-board" id="scoreBoard"></div>
+
+      <button class="btn btn-secondary btn-block mt-3" onclick="playAgain()">🔄 Play Another Round</button>
+      <button class="btn btn-outline btn-block mt-2" onclick="window.location.href='../games.html'">← Back to Games</button>
+    </div>
+  </div>
+
+  <script src="../js/state.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/prompts.js"></script>
+  <script>
+    /* ---- Prompts pool ---- */
+    const PROMPTS = GAME_PROMPTS.brain;
+
+    const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    /* ---- Game State ---- */
+    const participants = getParticipants();
+    let currentPrompt = '';
+    let responses = [];          // { name, answer }
+    let shuffledResponses = [];
+    let shuffledNames = [];
+    let currentAnswerIndex = 0;
+    let currentMatcherIndex = 0;
+    let scores = {};             // name -> points
+    let allGuesses = {};         // matcherName -> { answerIdx -> guessedName }
+
+    // Current matcher state
+    let selectedAnswerIdx = null;
+    let selectedNameIdx = null;
+    let currentMatches = {};     // answerIdx -> nameIdx
+
+    participants.forEach(p => scores[p.name] = 0);
+
+    /* ---- Phase helpers ---- */
+    function setPhase(num) {
+      [1, 2, 3, 4].forEach(n => {
+        document.getElementById(`phase${n}`).classList.toggle('hidden', n !== num);
+      });
+      document.querySelectorAll('.phase-dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i < num);
+      });
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    /* ---- Phase 1: Show prompt ---- */
+    currentPrompt = getRandomItem(PROMPTS);
+    document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
+
+    function skipPrompt() {
+      currentPrompt = getRandomItem(PROMPTS);
+      document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
+    }
+
+    function startCollecting() {
+      setPhase(2);
+      currentAnswerIndex = 0;
+      responses = [];
+      showAnswerForm();
+    }
+
+    /* ---- Phase 2: Collect answers ---- */
+    function showAnswerForm() {
+      if (currentAnswerIndex >= participants.length) {
+        startMatching();
+        return;
+      }
+      const player = participants[currentAnswerIndex];
+      document.getElementById('promptReminder').querySelector('span').textContent = `"${currentPrompt}"`;
+      document.getElementById('currentPlayerBanner').textContent = `🎤 ${player.name}'s turn — don't let others peek!`;
+      document.getElementById('answerInput').value = '';
+      document.getElementById('answerInput').focus();
+    }
+
+    function submitAnswer() {
+      const answer = document.getElementById('answerInput').value.trim();
+      if (!answer) {
+        alert('Please type an answer!');
+        return;
+      }
+      responses.push({ name: participants[currentAnswerIndex].name, answer });
+      currentAnswerIndex++;
+      showAnswerForm();
+    }
+
+    /* ---- Phase 3: Match the Following ---- */
+    function startMatching() {
+      setPhase(3);
+      shuffledResponses = shuffleArray(responses);
+      shuffledNames = shuffleArray(participants.map(p => p.name));
+      currentMatcherIndex = 0;
+      allGuesses = {};
+      showMatchRound();
+    }
+
+    function showMatchRound() {
+      if (currentMatcherIndex >= participants.length) {
+        showResults();
+        return;
+      }
+
+      const matcher = participants[currentMatcherIndex];
+      document.getElementById('promptMatch').querySelector('span').textContent = `"${currentPrompt}"`;
+      document.getElementById('matcherBanner').textContent = `🤔 ${matcher.name}'s turn to match`;
+
+      selectedAnswerIdx = null;
+      selectedNameIdx = null;
+      currentMatches = {};
+
+      document.getElementById('submitMatchBtn').classList.add('hidden');
+      renderMatchUI();
+    }
+
+    function renderMatchUI() {
+      const answersCol = document.getElementById('answersColumn');
+      const namesCol = document.getElementById('namesColumn');
+      const pairsContainer = document.getElementById('matchedPairsDisplay');
+
+      // Build matched sets
+      const matchedAnswers = new Set(Object.keys(currentMatches).map(Number));
+      const matchedNames = new Set(Object.values(currentMatches).map(Number));
+
+      // Answers column
+      answersCol.innerHTML = '<div class="match-column-header">📝 Answers</div>' +
+        shuffledResponses.map((r, i) => {
+          const isMatched = matchedAnswers.has(i);
+          const isActive = selectedAnswerIdx === i;
+          let cls = 'match-item match-answer';
+          if (isActive) cls += ' active';
+          if (isMatched) cls += ' matched';
+
+          const badge = isMatched
+            ? `<span class="match-badge">${escapeHTML(shuffledNames[currentMatches[i]])}</span>`
+            : '';
+
+          return `<div class="${cls}" onclick="selectAnswer(${i})" style="animation-delay: ${i * 0.05}s">
+            <div class="match-answer-text">
+              <span class="match-label">${LABELS[i]}</span>
+              <span>"${escapeHTML(r.answer)}"</span>
+              ${badge}
+            </div>
+          </div>`;
+        }).join('');
+
+      // Names column
+      namesCol.innerHTML = '<div class="match-column-header">👤 Players</div>' +
+        shuffledNames.map((name, i) => {
+          const isMatched = matchedNames.has(i);
+          const isActive = selectedNameIdx === i;
+          let cls = 'match-item match-name';
+          if (isActive) cls += ' active';
+          if (isMatched) cls += ' matched';
+
+          return `<div class="${cls}" onclick="selectName(${i})" style="animation-delay: ${i * 0.05}s">
+            ${escapeHTML(name)}
+          </div>`;
+        }).join('');
+
+      // Show matched pairs
+      const pairEntries = Object.entries(currentMatches);
+      if (pairEntries.length > 0) {
+        pairsContainer.innerHTML = '<div class="matched-pairs-header">Your matches:</div>' +
+          pairEntries.map(([ai, ni]) => {
+            const ansIdx = parseInt(ai);
+            return `<div class="matched-pair">
+              <span class="pair-label">${LABELS[ansIdx]}</span>
+              <span class="pair-arrow">→</span>
+              <span class="pair-name">${escapeHTML(shuffledNames[ni])}</span>
+              <button class="remove-match" onclick="removeMatch(${ansIdx})" title="Remove">✕</button>
+            </div>`;
+          }).join('');
+      } else {
+        pairsContainer.innerHTML = '<div class="matched-pairs-header">Tap an answer, then a name to match.</div>';
+      }
+
+      // Show submit button if all matched
+      const allMatched = Object.keys(currentMatches).length === shuffledResponses.length;
+      document.getElementById('submitMatchBtn').classList.toggle('hidden', !allMatched);
+    }
+
+    function selectAnswer(idx) {
+      if (Object.keys(currentMatches).map(Number).includes(idx)) return;
+      selectedAnswerIdx = idx;
+
+      // If a name is already selected, make a pair
+      if (selectedNameIdx !== null) {
+        makePair();
+      } else {
+        renderMatchUI();
+      }
+    }
+
+    function selectName(idx) {
+      if (Object.values(currentMatches).map(Number).includes(idx)) return;
+      selectedNameIdx = idx;
+
+      // If an answer is already selected, make a pair
+      if (selectedAnswerIdx !== null) {
+        makePair();
+      } else {
+        renderMatchUI();
+      }
+    }
+
+    function makePair() {
+      currentMatches[selectedAnswerIdx] = selectedNameIdx;
+      selectedAnswerIdx = null;
+      selectedNameIdx = null;
+      renderMatchUI();
+    }
+
+    function removeMatch(answerIdx) {
+      delete currentMatches[answerIdx];
+      renderMatchUI();
+    }
+
+    function submitMatches() {
+      const matcher = participants[currentMatcherIndex];
+      const guesses = {};
+
+      // Record guesses: for each shuffled answer index, who did the matcher think wrote it?
+      for (const [ansIdx, nameIdx] of Object.entries(currentMatches)) {
+        const actualAnswer = shuffledResponses[parseInt(ansIdx)];
+        const guessedName = shuffledNames[nameIdx];
+        guesses[parseInt(ansIdx)] = guessedName;
+
+        // Score: did they guess correctly?
+        if (guessedName === actualAnswer.name) {
+          scores[matcher.name] = (scores[matcher.name] || 0) + 1;
+        }
+      }
+
+      allGuesses[matcher.name] = guesses;
+      currentMatcherIndex++;
+      showMatchRound();
+    }
+
+    /* ---- Phase 4: Results ---- */
+    function showResults() {
+      setPhase(4);
+
+      // Save scores to global scorecard
+      saveGameScores('brain', scores);
+
+      const revealDiv = document.getElementById('revealedAnswers');
+
+      revealDiv.innerHTML = shuffledResponses.map((r, i) => {
+        // For each answer, build a table of guesses
+        const guessTableRows = participants.map(p => {
+          const playerGuesses = allGuesses[p.name];
+          if (!playerGuesses || playerGuesses[i] === undefined) return '';
+
+          const guessedName = playerGuesses[i];
+          const isCorrect = guessedName === r.name;
+          const cls = isCorrect ? 'correct-cell' : 'wrong-cell';
+          const icon = isCorrect ? '✅' : '❌';
+
+          return `<tr>
+            <td>${escapeHTML(p.name)}</td>
+            <td class="${cls}">${icon} ${escapeHTML(guessedName)}</td>
+          </tr>`;
+        }).filter(Boolean).join('');
+
+        return `<div class="result-card" style="animation-delay: ${i * 0.1}s">
+          <div class="result-card-header">
+            <div class="answer-text">"​${escapeHTML(r.answer)}​"</div>
+            <div class="answer-author">✍️ Written by ${escapeHTML(r.name)}</div>
+          </div>
+          <table class="result-table">
+            <thead><tr><th>Player</th><th>Guessed</th></tr></thead>
+            <tbody>${guessTableRows}</tbody>
+          </table>
+        </div>`;
+      }).join('');
+
+      // Scoreboard sorted
+      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      const board = document.getElementById('scoreBoard');
+      board.innerHTML = sorted.map(([name, pts], i) => `
+        <div class="score-row" style="animation-delay: ${i * 0.08}s">
+          <span>${i === 0 ? '👑 ' : ''}${escapeHTML(name)}</span>
+          <span class="points">${pts} / ${shuffledResponses.length} correct</span>
+        </div>
+      `).join('');
+    }
+
+    function playAgain() {
+      currentPrompt = getRandomItem(PROMPTS);
+      document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
+      responses = [];
+      shuffledResponses = [];
+      shuffledNames = [];
+      currentAnswerIndex = 0;
+      currentMatcherIndex = 0;
+      selectedAnswerIdx = null;
+      selectedNameIdx = null;
+      currentMatches = {};
+      allGuesses = {};
+      participants.forEach(p => scores[p.name] = 0);
+      setPhase(1);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hot Take Roulette</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <style>
+    .statement-card {
+      background: linear-gradient(135deg, #e17055, #d63031);
+      color: #fff;
+      padding: 2rem;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      min-height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: scaleIn 0.4s ease both;
+      box-shadow: 0 8px 30px rgba(214, 48, 49, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .statement-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .current-player-banner {
+      background: linear-gradient(135deg, var(--accent), #fdcb6e);
+      color: var(--text);
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      animation: fadeInUp 0.3s ease both;
+      box-shadow: 0 2px 12px rgba(253, 203, 110, 0.3);
+    }
+    .vote-buttons {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .vote-btn {
+      flex: 1;
+      min-width: 100px;
+      padding: 1rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: 3px solid transparent;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(.4,0,.2,1);
+      font-family: var(--font);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .vote-btn.agree {
+      background: #d4f5dc;
+      color: #00b894;
+      border-color: #00b894;
+    }
+    .vote-btn.agree:hover, .vote-btn.agree.selected {
+      background: #00b894;
+      color: #fff;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 184, 148, 0.3);
+    }
+    .vote-btn.disagree {
+      background: #fde0e0;
+      color: #d63031;
+      border-color: #d63031;
+    }
+    .vote-btn.disagree:hover, .vote-btn.disagree.selected {
+      background: #d63031;
+      color: #fff;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(214, 48, 49, 0.3);
+    }
+    .vote-btn.offended {
+      background: #ffeaa7;
+      color: #856404;
+      border-color: #fdcb6e;
+    }
+    .vote-btn.offended:hover, .vote-btn.offended.selected {
+      background: #fdcb6e;
+      color: #5a3e00;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(253, 203, 110, 0.3);
+    }
+    .result-section {
+      margin-top: 1.5rem;
+    }
+    .defender-card {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      text-align: center;
+      margin-top: 1.5rem;
+      animation: scaleIn 0.5s ease both;
+      box-shadow: 0 8px 30px rgba(108, 92, 231, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .defender-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .defender-card .name {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+    .defender-card p {
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+    .votes-summary {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    .vote-summary-item {
+      text-align: center;
+    }
+    .vote-summary-item .count {
+      font-size: 2rem;
+      font-weight: 800;
+      animation: bounceIn 0.5s ease both;
+    }
+    .vote-summary-item .label {
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+    .voter-list {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="game-page">
+    <!-- Header -->
+    <div class="game-header">
+      <h1>🔥 Hot Take Roulette</h1>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='../games.html'">← Back</button>
+    </div>
+
+    <!-- Phase 1: Show Statement -->
+    <div id="phase1">
+      <div class="statement-card" id="statementDisplay">Loading...</div>
+      <p class="text-center mb-3" style="color: var(--text-light);">
+        Each player votes one at a time. Pass the device after tapping your choice!
+      </p>
+      <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" style="flex:1" onclick="startVoting()">🎯 Start Voting</button>
+        <button style="background:none; border:2px solid rgba(108,92,231,0.3); color:var(--text-light); padding:0.4rem 1rem; border-radius:var(--radius-sm); cursor:pointer; font-family:var(--font); font-size:0.85rem; transition:all 0.2s ease;" onclick="skipStatement()">⏭ Skip</button>
+      </div>
+    </div>
+
+    <!-- Phase 2: Voting -->
+    <div id="phase2" class="hidden">
+      <div class="statement-card" id="statementReminder" style="font-size: 1rem; padding: 1.25rem;"></div>
+      <div class="current-player-banner" id="voterBanner"></div>
+      <div class="vote-buttons" id="voteButtons">
+        <button class="vote-btn agree" onclick="castVote('agree', this)">👍 Agree</button>
+        <button class="vote-btn disagree" onclick="castVote('disagree', this)">👎 Disagree</button>
+        <button class="vote-btn offended" onclick="castVote('offended', this)">😤 Offended</button>
+      </div>
+      <button class="btn btn-primary btn-block mt-3 hidden" id="confirmVoteBtn" onclick="confirmVote()">
+        Lock In & Pass Device
+      </button>
+    </div>
+
+    <!-- Phase 3: Results -->
+    <div id="phase3" class="hidden">
+      <div class="statement-card" id="statementResult" style="font-size: 1rem; padding: 1.25rem;"></div>
+
+      <h2 class="text-center">📊 Results</h2>
+      <div class="votes-summary" id="votesSummary"></div>
+
+      <div id="voterBreakdown"></div>
+
+      <div class="defender-card" id="defenderCard">
+        <p>⚔️ Chosen to defend the minority opinion:</p>
+        <div class="name" id="defenderName"></div>
+        <p id="defenderTask"></p>
+      </div>
+
+      <button class="btn btn-secondary btn-block mt-3" onclick="nextRound()">🔄 Next Hot Take</button>
+      <button class="btn btn-outline btn-block mt-2" onclick="window.location.href='../games.html'">← Back to Games</button>
+    </div>
+  </div>
+
+  <script src="../js/state.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/prompts.js"></script>
+  <script>
+    /* ---- Statements pool ---- */
+    const STATEMENTS = GAME_PROMPTS['hot-take'];
+
+    /* ---- Game State ---- */
+    const participants = getParticipants();
+    let currentStatement = '';
+    let currentVoterIndex = 0;
+    let currentVoteChoice = null;
+    let votes = [];  // { name, vote }
+    let usedStatements = [];
+
+    /* ---- Phase helpers ---- */
+    function setPhase(num) {
+      [1, 2, 3].forEach(n => {
+        document.getElementById(`phase${n}`).classList.toggle('hidden', n !== num);
+      });
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function pickStatement() {
+      const available = STATEMENTS.filter(s => !usedStatements.includes(s));
+      if (available.length === 0) usedStatements = [];
+      const pool = available.length > 0 ? available : STATEMENTS;
+      const pick = getRandomItem(pool);
+      usedStatements.push(pick);
+      return pick;
+    }
+
+    /* ---- Phase 1 ---- */
+    currentStatement = pickStatement();
+    document.getElementById('statementDisplay').textContent = `"${currentStatement}"`;
+
+    function skipStatement() {
+      currentStatement = pickStatement();
+      document.getElementById('statementDisplay').textContent = `"${currentStatement}"`;
+    }
+
+    function startVoting() {
+      votes = [];
+      currentVoterIndex = 0;
+      currentVoteChoice = null;
+      setPhase(2);
+      showVoter();
+    }
+
+    /* ---- Phase 2: Voting ---- */
+    function showVoter() {
+      if (currentVoterIndex >= participants.length) {
+        showResults();
+        return;
+      }
+      const player = participants[currentVoterIndex];
+      document.getElementById('statementReminder').textContent = `"${currentStatement}"`;
+      document.getElementById('voterBanner').textContent = `🗳️ ${player.name}'s turn — vote honestly!`;
+      currentVoteChoice = null;
+      document.getElementById('confirmVoteBtn').classList.add('hidden');
+      document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
+    }
+
+    function castVote(choice, btn) {
+      currentVoteChoice = choice;
+      document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('confirmVoteBtn').classList.remove('hidden');
+    }
+
+    function confirmVote() {
+      if (!currentVoteChoice) return;
+      votes.push({ name: participants[currentVoterIndex].name, vote: currentVoteChoice });
+      currentVoterIndex++;
+      showVoter();
+    }
+
+    /* ---- Phase 3: Results ---- */
+    function showResults() {
+      setPhase(3);
+      document.getElementById('statementResult').textContent = `"${currentStatement}"`;
+
+      // Count votes
+      const counts = { agree: 0, disagree: 0, offended: 0 };
+      const votersByChoice = { agree: [], disagree: [], offended: [] };
+      votes.forEach(v => {
+        counts[v.vote]++;
+        votersByChoice[v.vote].push(v.name);
+      });
+
+      const total = votes.length;
+
+      // Determine majority
+      let majorityChoice = 'agree';
+      let majorityCount = 0;
+      for (const [choice, count] of Object.entries(counts)) {
+        if (count > majorityCount) {
+          majorityCount = count;
+          majorityChoice = choice;
+        }
+      }
+
+      // Award 1 point to majority voters, save to global scorecard
+      const roundScores = {};
+      participants.forEach(p => roundScores[p.name] = 0);
+      votersByChoice[majorityChoice].forEach(name => {
+        roundScores[name] = 1;
+      });
+      saveGameScores('hot-take', roundScores);
+
+      // Summary
+      const summaryDiv = document.getElementById('votesSummary');
+      summaryDiv.innerHTML = `
+        <div class="vote-summary-item">
+          <div class="count" style="color: #00b894;">👍 ${counts.agree}</div>
+          <div class="label">Agree</div>
+        </div>
+        <div class="vote-summary-item">
+          <div class="count" style="color: #d63031;">👎 ${counts.disagree}</div>
+          <div class="label">Disagree</div>
+        </div>
+        <div class="vote-summary-item">
+          <div class="count" style="color: #856404;">😤 ${counts.offended}</div>
+          <div class="label">Offended</div>
+        </div>
+      `;
+
+      // Voter breakdown
+      const breakdownDiv = document.getElementById('voterBreakdown');
+      breakdownDiv.innerHTML = ['agree', 'disagree', 'offended'].map(choice => {
+        if (votersByChoice[choice].length === 0) return '';
+        const emoji = choice === 'agree' ? '👍' : choice === 'disagree' ? '👎' : '😤';
+        return `<div class="voter-list">${emoji} ${votersByChoice[choice].map(n => escapeHTML(n)).join(', ')}</div>`;
+      }).join('');
+
+      // Determine minority opinion
+      let minorityChoice = 'agree';
+      let minorityCount = total + 1;
+      for (const [choice, count] of Object.entries(counts)) {
+        if (count > 0 && count < minorityCount) {
+          minorityCount = count;
+          minorityChoice = choice;
+        }
+      }
+
+      // Pick random defender from minority
+      const minorityVoters = votersByChoice[minorityChoice];
+      if (minorityVoters.length > 0) {
+        const defender = getRandomItem(minorityVoters);
+        const choiceLabel = minorityChoice === 'agree' ? 'AGREEING' : minorityChoice === 'disagree' ? 'DISAGREEING' : 'being OFFENDED';
+        document.getElementById('defenderName').textContent = defender;
+        document.getElementById('defenderTask').textContent = `Must defend their stance of ${choiceLabel}. Convince the room!`;
+        document.getElementById('defenderCard').classList.remove('hidden');
+      } else {
+        document.getElementById('defenderCard').classList.add('hidden');
+      }
+    }
+
+    function nextRound() {
+      currentStatement = pickStatement();
+      document.getElementById('statementDisplay').textContent = `"${currentStatement}"`;
+      votes = [];
+      currentVoterIndex = 0;
+      currentVoteChoice = null;
+      setPhase(1);
+    }
+  </script>
+</body>
+</html>

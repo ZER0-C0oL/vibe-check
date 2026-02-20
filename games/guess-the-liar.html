@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guess the Liar</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <style>
+    .prompt-card {
+      background: linear-gradient(135deg, #00b894, #00cec9);
+      color: #fff;
+      padding: 2rem;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: scaleIn 0.4s ease both;
+      box-shadow: 0 8px 30px rgba(0, 184, 148, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .prompt-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .prompt-card span { position: relative; z-index: 1; }
+    .liar-reveal {
+      text-align: center;
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      margin: 1.5rem 0;
+      animation: bounceIn 0.5s ease both;
+    }
+    .liar-reveal.hidden-liar {
+      background: linear-gradient(135deg, #dfe6e9, #b2bec3);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .liar-reveal.hidden-liar:hover { transform: scale(1.02); }
+    .liar-reveal.shown {
+      background: linear-gradient(135deg, #d63031, #e17055);
+      color: #fff;
+      box-shadow: 0 8px 30px rgba(214, 48, 49, 0.25);
+    }
+    .liar-reveal .label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.8;
+    }
+    .liar-reveal .name {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-top: 0.25rem;
+    }
+    .instructions-card {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      animation: fadeInUp 0.4s ease 0.1s both;
+    }
+    .instructions-card h3 { margin-bottom: 0.5rem; }
+    .instructions-card ol {
+      padding-left: 1.2rem;
+      font-size: 0.9rem;
+      color: var(--text-light);
+      line-height: 1.8;
+    }
+    .current-player-banner {
+      background: linear-gradient(135deg, var(--accent), #fdcb6e);
+      color: var(--text);
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      animation: fadeInUp 0.3s ease both;
+    }
+    .secret-card {
+      background: linear-gradient(135deg, #636e72, #2d3436);
+      color: #fff;
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      text-align: center;
+      margin-bottom: 1rem;
+      animation: scaleIn 0.3s ease both;
+    }
+    .secret-card .role {
+      font-size: 1.3rem;
+      font-weight: 800;
+    }
+    .secret-card .hint {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      margin-top: 0.5rem;
+    }
+    .secret-card.is-liar {
+      background: linear-gradient(135deg, #d63031, #e17055);
+    }
+    .vote-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .vote-option {
+      flex: 1 1 calc(50% - 0.3rem);
+      min-width: 120px;
+      padding: 0.85rem 1rem;
+      border: 2px solid #dfe6e9;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.85);
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: var(--font);
+      font-size: 0.95rem;
+      transition: all 0.25s ease;
+    }
+    .vote-option:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+    .vote-option.selected {
+      border-color: var(--danger);
+      background: linear-gradient(135deg, #d63031, #e17055);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    .guess-results {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    .guess-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255,255,255,0.85);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      animation: fadeInUp 0.3s ease both;
+    }
+    .guess-row .correct { color: var(--success); font-weight: 700; }
+    .guess-row .wrong { color: var(--danger); font-weight: 700; }
+    .skip-btn {
+      background: none;
+      border: 2px solid rgba(108,92,231,0.3);
+      color: var(--text-light);
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .skip-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .phase1-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .phase1-actions .btn { flex: 1; }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="game-page">
+    <div class="game-header">
+      <h1>🤥 Guess the Liar</h1>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='../games.html'">← Back</button>
+    </div>
+
+    <!-- Phase 1: Show Question -->
+    <div id="phase1">
+      <div class="prompt-card" id="promptDisplay"><span>Loading...</span></div>
+      <div class="instructions-card">
+        <h3>📋 How It Works</h3>
+        <ol>
+          <li>Each player secretly sees if they're the <strong>Liar</strong> or <strong>Truth-Teller</strong>.</li>
+          <li>Everyone answers the question out loud — the Liar must <strong>make up a convincing lie</strong>.</li>
+          <li>After all answers, everyone guesses who the Liar is!</li>
+        </ol>
+      </div>
+      <div class="phase1-actions">
+        <button class="btn btn-primary" onclick="startAssigning()">🎭 Assign Roles</button>
+        <button class="skip-btn" onclick="skipPrompt()">⏭ Skip Question</button>
+      </div>
+    </div>
+
+    <!-- Phase 2: Assign Roles secretly -->
+    <div id="phase2" class="hidden">
+      <div class="prompt-card" id="promptReminder" style="font-size: 1rem; padding: 1.25rem;"><span></span></div>
+      <div class="current-player-banner" id="playerBanner"></div>
+      <div class="secret-card hidden" id="secretCard">
+        <div class="role" id="roleText"></div>
+        <div class="hint" id="roleHint"></div>
+      </div>
+      <button class="btn btn-secondary btn-block" id="revealRoleBtn" onclick="revealRole()">👀 Tap to See Your Role</button>
+      <button class="btn btn-primary btn-block mt-2 hidden" id="nextPlayerBtn" onclick="nextPlayer()">Pass Device →</button>
+    </div>
+
+    <!-- Phase 3: Guessing -->
+    <div id="phase3" class="hidden">
+      <div class="prompt-card" id="promptGuess" style="font-size: 1rem; padding: 1.25rem;"><span></span></div>
+      <p class="text-center mb-2" style="font-weight: 600;">Everyone has answered — now guess the Liar!</p>
+      <div class="current-player-banner" id="guessBanner"></div>
+      <div class="vote-grid" id="guessGrid"></div>
+      <button class="btn btn-primary btn-block hidden" id="confirmGuessBtn" onclick="confirmGuess()">Lock In & Pass Device</button>
+    </div>
+
+    <!-- Phase 4: Reveal -->
+    <div id="phase4" class="hidden">
+      <div class="prompt-card" id="promptReveal" style="font-size: 1rem; padding: 1.25rem;"><span></span></div>
+
+      <div class="liar-reveal hidden-liar" id="liarReveal" onclick="revealLiar()">
+        <div class="label">🔍 Tap to Reveal the Liar</div>
+        <div class="name">???</div>
+      </div>
+
+      <div class="guess-results hidden" id="guessResults"></div>
+
+      <button class="btn btn-secondary btn-block mt-3" onclick="nextRound()">🔄 Next Round</button>
+      <button class="btn btn-outline btn-block mt-2" onclick="window.location.href='../games.html'">← Back to Games</button>
+    </div>
+  </div>
+
+  <script src="../js/state.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/prompts.js"></script>
+  <script>
+    const PROMPTS = GAME_PROMPTS['guess-the-liar'];
+    const participants = getParticipants();
+    let currentPrompt = '';
+    let liarIndex = -1;
+    let currentPlayerIndex = 0;
+    let guessVoterIndex = 0;
+    let currentGuess = null;
+    let guesses = []; // { guesser, guessedLiar }
+    let usedPrompts = [];
+
+    function setPhase(n) {
+      [1,2,3,4].forEach(p => document.getElementById(`phase${p}`).classList.toggle('hidden', p !== n));
+    }
+    function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    function pickPrompt() {
+      const avail = PROMPTS.filter(p => !usedPrompts.includes(p));
+      if (avail.length === 0) usedPrompts = [];
+      const pool = avail.length > 0 ? avail : PROMPTS;
+      const pick = getRandomItem(pool);
+      usedPrompts.push(pick);
+      return pick;
+    }
+
+    function loadRound() {
+      currentPrompt = pickPrompt();
+      document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
+    }
+
+    function skipPrompt() { loadRound(); }
+
+    function startAssigning() {
+      liarIndex = Math.floor(Math.random() * participants.length);
+      currentPlayerIndex = 0;
+      setPhase(2);
+      document.getElementById('promptReminder').querySelector('span').textContent = `"${currentPrompt}"`;
+      showPlayerRole();
+    }
+
+    function showPlayerRole() {
+      if (currentPlayerIndex >= participants.length) {
+        startGuessing();
+        return;
+      }
+      const player = participants[currentPlayerIndex];
+      document.getElementById('playerBanner').textContent = `🎭 ${player.name} — look at your role privately!`;
+      document.getElementById('secretCard').classList.add('hidden');
+      document.getElementById('revealRoleBtn').classList.remove('hidden');
+      document.getElementById('nextPlayerBtn').classList.add('hidden');
+    }
+
+    function revealRole() {
+      const isLiar = currentPlayerIndex === liarIndex;
+      const card = document.getElementById('secretCard');
+      card.classList.remove('hidden', 'is-liar');
+      if (isLiar) card.classList.add('is-liar');
+      document.getElementById('roleText').textContent = isLiar ? '🤥 You are the LIAR!' : '✅ You are a Truth-Teller';
+      document.getElementById('roleHint').textContent = isLiar
+        ? 'Make up a convincing lie when you answer!'
+        : 'Answer honestly when it\'s your turn to speak.';
+      document.getElementById('revealRoleBtn').classList.add('hidden');
+      document.getElementById('nextPlayerBtn').classList.remove('hidden');
+    }
+
+    function nextPlayer() {
+      currentPlayerIndex++;
+      showPlayerRole();
+    }
+
+    function startGuessing() {
+      guesses = [];
+      guessVoterIndex = 0;
+      currentGuess = null;
+      setPhase(3);
+      document.getElementById('promptGuess').querySelector('span').textContent = `"${currentPrompt}"`;
+      showGuesser();
+    }
+
+    function showGuesser() {
+      if (guessVoterIndex >= participants.length) { showReveal(); return; }
+      const player = participants[guessVoterIndex];
+      document.getElementById('guessBanner').textContent = `🔍 ${player.name} — who do you think is the Liar?`;
+      currentGuess = null;
+      document.getElementById('confirmGuessBtn').classList.add('hidden');
+
+      const grid = document.getElementById('guessGrid');
+      grid.innerHTML = participants
+        .filter((p, i) => i !== guessVoterIndex) // can't guess yourself
+        .map((p, i) => `
+          <button class="vote-option" onclick="selectLiar('${p.name.replace(/'/g, "\\'")}', this)">${escapeHTML(p.name)}</button>
+        `).join('');
+    }
+
+    function selectLiar(name, btn) {
+      currentGuess = name;
+      document.querySelectorAll('.vote-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('confirmGuessBtn').classList.remove('hidden');
+    }
+
+    function confirmGuess() {
+      if (!currentGuess) return;
+      guesses.push({ guesser: participants[guessVoterIndex].name, guessedLiar: currentGuess });
+      guessVoterIndex++;
+      showGuesser();
+    }
+
+    function showReveal() {
+      setPhase(4);
+      document.getElementById('promptReveal').querySelector('span').textContent = `"${currentPrompt}"`;
+      // Reset reveal card
+      const revealCard = document.getElementById('liarReveal');
+      revealCard.className = 'liar-reveal hidden-liar';
+      revealCard.innerHTML = '<div class="label">🔍 Tap to Reveal the Liar</div><div class="name">???</div>';
+      document.getElementById('guessResults').classList.add('hidden');
+    }
+
+    function revealLiar() {
+      const liarName = participants[liarIndex].name;
+      const revealCard = document.getElementById('liarReveal');
+      revealCard.className = 'liar-reveal shown';
+      revealCard.style.cursor = 'default';
+      revealCard.onclick = null;
+      revealCard.innerHTML = `<div class="label">🤥 The Liar Was</div><div class="name">${escapeHTML(liarName)}</div>`;
+
+      // Show guess results
+      const resultsDiv = document.getElementById('guessResults');
+      resultsDiv.classList.remove('hidden');
+
+      // Score: 1 point for correct guesses
+      const roundScores = {};
+      participants.forEach(p => roundScores[p.name] = 0);
+
+      resultsDiv.innerHTML = guesses.map((g, i) => {
+        const correct = g.guessedLiar === liarName;
+        if (correct) roundScores[g.guesser] = (roundScores[g.guesser] || 0) + 1;
+        return `<div class="guess-row" style="animation-delay: ${i * 0.08}s">
+          <span>${escapeHTML(g.guesser)}</span>
+          <span>guessed <strong>${escapeHTML(g.guessedLiar)}</strong></span>
+          <span class="${correct ? 'correct' : 'wrong'}">${correct ? '✅ Correct!' : '❌ Wrong'}</span>
+        </div>`;
+      }).join('');
+
+      saveGameScores('guess-the-liar', roundScores);
+    }
+
+    function nextRound() {
+      loadRound();
+      setPhase(1);
+    }
+
+    // Init
+    loadRound();
+  </script>
+</body>
+</html>

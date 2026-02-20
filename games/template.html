@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Template – Party Games Hub</title>
+  <link rel="stylesheet" href="../css/global.css" />
+</head>
+<body>
+  <div class="game-page">
+    <!-- Header -->
+    <div class="game-header">
+      <h1>🎮 Game Title Here</h1>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='../games.html'">← Back</button>
+    </div>
+
+    <!-- Main game UI goes here -->
+    <div class="card text-center" style="padding: 3rem 1.5rem;">
+      <h2>Your Game Goes Here</h2>
+      <p class="mt-2" style="color: var(--text-light);">
+        Replace this content with your game logic and UI.
+      </p>
+      <p class="mt-2" style="color: var(--text-light); font-size: 0.9rem;">
+        Participants are loaded below — use them in your game!
+      </p>
+      <div class="mt-3" id="playerList"></div>
+    </div>
+  </div>
+
+  <!-- Include shared scripts -->
+  <script src="../js/state.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    /**
+     * TEMPLATE INSTRUCTIONS:
+     *
+     * 1. Copy this file and rename it (e.g., my-game.html)
+     * 2. Update the <title> and <h1> with your game name
+     * 3. Add your game UI and logic below
+     * 4. Register the game in /js/config.js:
+     *
+     *    {
+     *      id: "my-game",
+     *      title: "My Game",
+     *      description: "A short description",
+     *      file: "games/my-game.html",
+     *      minPlayers: 2
+     *    }
+     *
+     * That's it! The games hub will pick it up automatically.
+     */
+
+    // Access participants from global state
+    const participants = getParticipants();
+
+    // Example: display players
+    const playerList = document.getElementById('playerList');
+    playerList.innerHTML = participants.map(p =>
+      `<span class="badge" style="margin: 0.2rem;">${p.name}</span>`
+    ).join(' ');
+
+    // Use utility functions:
+    // shuffleArray(arr), getRandomItem(arr), saveToStorage(key, val), readFromStorage(key)
+  </script>
+</body>
+</html>

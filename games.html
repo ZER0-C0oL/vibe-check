@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Games – Party Games Hub</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/cards.css" />
+  <style>
+    .hub-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      animation: fadeInUp 0.5s ease both;
+    }
+    .hub-header h1 {
+      margin-bottom: 0.25rem;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hub-header p {
+      color: var(--text-light);
+      animation: fadeIn 0.5s ease 0.2s both;
+    }
+    .player-warning {
+      background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+      color: #856404;
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      animation: fadeInUp 0.4s ease 0.1s both;
+      border: 1px solid rgba(253, 203, 110, 0.5);
+    }
+    .nav-links {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 2rem;
+      animation: fadeInUp 0.5s ease 0.4s both;
+    }
+    .container-wide {
+      animation: fadeIn 0.4s ease both;
+    }
+
+    /* === Scorecard Table === */
+    .scorecard-section {
+      margin-top: 2rem;
+      animation: fadeInUp 0.5s ease 0.4s both;
+    }
+    .scorecard-section h2 {
+      margin-bottom: 0.75rem;
+    }
+    .scorecard-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .scorecard-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: 0.9rem;
+    }
+    .scorecard-table th,
+    .scorecard-table td {
+      padding: 0.6rem 0.75rem;
+      text-align: center;
+      white-space: nowrap;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .scorecard-table th {
+      background: var(--gradient-primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      position: sticky;
+      top: 0;
+    }
+    .scorecard-table th:first-child {
+      text-align: left;
+    }
+    .scorecard-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+      color: var(--text);
+      white-space: normal;
+      word-break: break-word;
+    }
+    .scorecard-table tr:last-child td {
+      border-bottom: none;
+    }
+    .scorecard-table tr:hover td {
+      background: rgba(108, 92, 231, 0.04);
+    }
+    .scorecard-table .total-row td {
+      background: linear-gradient(135deg, rgba(255,234,167,0.3), rgba(253,203,110,0.15));
+      font-weight: 700;
+      border-top: 2px solid rgba(108, 92, 231, 0.15);
+    }
+    .scorecard-table .total-row td:first-child {
+      color: var(--primary);
+    }
+    .scorecard-empty {
+      text-align: center;
+      color: var(--text-light);
+      padding: 1.5rem 1rem;
+      font-size: 0.9rem;
+      background: rgba(255,255,255,0.6);
+      border-radius: var(--radius);
+    }
+    .scorecard-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 500px) {
+      .scorecard-table {
+        font-size: 0.82rem;
+      }
+      .scorecard-table th,
+      .scorecard-table td {
+        padding: 0.5rem 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="container-wide">
+    <!-- Header -->
+    <div class="hub-header">
+      <h1 id="hubTitle">🎮 Games</h1>
+      <p id="playerCount"></p>
+    </div>
+
+    <!-- Warning if not enough players -->
+    <div class="player-warning hidden" id="playerWarning">
+      ⚠️ Some games need more players. Go back to the lobby to add more!
+    </div>
+
+    <!-- Games Grid -->
+    <div class="games-grid" id="gamesGrid"></div>
+
+    <!-- Scorecard -->
+    <div class="scorecard-section" id="scorecardSection">
+      <div class="flex flex-between" style="align-items: center;">
+        <h2>🏆 Scorecard</h2>
+      </div>
+      <div id="scorecardContent"></div>
+      <div class="scorecard-actions" id="scorecardActions" style="display:none;">
+        <button class="btn btn-outline btn-sm" onclick="handleClearScores()">Clear Scores</button>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-links">
+      <button class="btn btn-outline btn-sm" onclick="navigateTo('lobby.html')">👥 Back to Lobby</button>
+      <button class="btn btn-outline btn-sm" onclick="navigateTo('index.html')">🏠 Home</button>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script>
+    const participants = getParticipants();
+    const playerCount = participants.length;
+
+    // Set title
+    document.getElementById('hubTitle').textContent = `🎮 ${getPartyTitle()}`;
+    document.getElementById('playerCount').textContent = `${playerCount} player${playerCount !== 1 ? 's' : ''} ready`;
+
+    // Show warning if low players
+    let hasWarning = false;
+    GAMES.forEach(game => {
+      if (playerCount < game.minPlayers) hasWarning = true;
+    });
+    if (hasWarning) {
+      document.getElementById('playerWarning').classList.remove('hidden');
+    }
+
+    // Render game cards
+    const grid = document.getElementById('gamesGrid');
+
+    GAMES.forEach(game => {
+      const canPlay = playerCount >= game.minPlayers;
+      const card = document.createElement('div');
+      card.className = 'game-card';
+      if (!canPlay) card.style.opacity = '0.6';
+
+      card.innerHTML = `
+        <h3>${game.title}</h3>
+        <p>${game.description}</p>
+        <div class="meta">👥 Min ${game.minPlayers} players</div>
+        <button
+          class="btn ${canPlay ? 'btn-primary' : 'btn-outline'} btn-block"
+          ${canPlay ? '' : 'disabled'}
+          onclick="navigateTo('${game.file}')"
+        >
+          ${canPlay ? '▶ Play' : '🔒 Need more players'}
+        </button>
+      `;
+
+      grid.appendChild(card);
+    });
+
+    /* ---- Scorecard ---- */
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function renderScorecard() {
+      const scorecard = getScorecard();
+      const playerNames = participants.map(p => p.name);
+      const container = document.getElementById('scorecardContent');
+      const actionsDiv = document.getElementById('scorecardActions');
+
+      const gameIds = Object.keys(scorecard);
+      if (gameIds.length === 0 || playerNames.length === 0) {
+        container.innerHTML = '<div class="scorecard-empty">No scores yet — play some games first!</div>';
+        actionsDiv.style.display = 'none';
+        return;
+      }
+
+      // Map game IDs to display titles
+      const gameTitles = {};
+      if (typeof GAMES !== 'undefined') {
+        GAMES.forEach(g => gameTitles[g.id] = g.title);
+      }
+
+      // Collect all player names that appear in any game score
+      const allScoredPlayers = new Set();
+      for (const gid of gameIds) {
+        for (const name of Object.keys(scorecard[gid])) {
+          allScoredPlayers.add(name);
+        }
+      }
+      const displayPlayers = [...new Set([...playerNames, ...allScoredPlayers])];
+
+      if (displayPlayers.length === 0) {
+        container.innerHTML = '<div class="scorecard-empty">No scores yet — play some games first!</div>';
+        actionsDiv.style.display = 'none';
+        return;
+      }
+
+      // Build table
+      let html = '<div class="scorecard-table-wrap"><table class="scorecard-table">';
+      html += '<thead><tr><th>Game</th>';
+      displayPlayers.forEach(name => {
+        html += `<th>${escapeHTML(name)}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      const totals = {};
+      displayPlayers.forEach(n => totals[n] = 0);
+
+      gameIds.forEach(gid => {
+        const title = gameTitles[gid] || gid;
+        html += `<tr><td>${escapeHTML(title)}</td>`;
+        displayPlayers.forEach(name => {
+          const pts = (scorecard[gid] && scorecard[gid][name]) || 0;
+          totals[name] += pts;
+          html += `<td>${pts}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      html += '<tr class="total-row"><td>Total</td>';
+      displayPlayers.forEach(name => {
+        html += `<td>${totals[name]}</td>`;
+      });
+      html += '</tr>';
+
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+      actionsDiv.style.display = 'flex';
+    }
+
+    function handleClearScores() {
+      if (confirm('Clear all game scores?')) {
+        clearScorecard();
+        renderScorecard();
+      }
+    }
+
+    renderScorecard();
+  </script>
+</body>
+</html>

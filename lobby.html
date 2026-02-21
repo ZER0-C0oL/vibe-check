@@ -116,6 +116,28 @@
       gap: 0.75rem;
     }
     .room-choice-actions .btn { flex: 1; }
+    .db-alert {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(0,184,148,0.15), rgba(85,239,196,0.15));
+      color: #00695c;
+      border: 1px solid rgba(0,184,148,0.35);
+      font-size: 0.85rem;
+    }
+    .db-alert strong { color: #00796b; }
+    .db-alert .dismiss {
+      background: none;
+      border: none;
+      color: #00796b;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.1rem 0.3rem;
+    }
 
     @media (max-width: 500px) {
       .form-row {
@@ -263,6 +285,8 @@
     const genderSelect = document.getElementById('genderSelect');
     const participantList = document.getElementById('participantList');
     const countBadge = document.getElementById('countBadge');
+    const dbAlert = document.getElementById('dbAlert');
+    const dbAlertText = document.getElementById('dbAlertText');
 
     let roomPollTimer = null;
     let currentRoomStateHash = '';
@@ -298,6 +322,24 @@
       roomJoinCard.classList.toggle('hidden', step !== 'join');
       roomCreateError.textContent = '';
       roomJoinError.textContent = '';
+    }
+
+    function dismissDbAlert() {
+      dbAlert.classList.add('hidden');
+    }
+
+    async function checkDatabaseStatus() {
+      try {
+        const res = await fetch('/api/health');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.ok) return;
+        if (data.storage === 'memory') return;
+
+        const providerLabel = data.storage === 'upstash' ? 'Upstash' : 'Vercel KV';
+      } catch {
+        // No-op
+      }
     }
 
     function renderParticipants(participants, removable = true) {
@@ -503,6 +545,7 @@
 
     if (mode === 'room') {
       showRoomStep('choice');
+      checkDatabaseStatus();
     } else {
       renderParticipants(getParticipants(), true);
     }

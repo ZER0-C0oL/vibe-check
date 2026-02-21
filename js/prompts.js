@@ -252,5 +252,165 @@ const GAME_PROMPTS = {
     "Start a fight over a board game.",
     "Be the last one to follow a trend.",
     "Dramatically retell a boring story."
+  ],
+
+  /* ---- Temporary Personality Disorder ---- */
+  "personality-disorder": [
+    {
+      "task": "For the next 10 turns, speak in an overly polite and dramatic way.",
+      "duration": "10 turns"
+    },
+    {
+      "task": "For the next 5 minutes, compliment someone before speaking to them.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, you are the official hype person for the group.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 minutes, ask at least one curious question before giving an opinion.",
+      "duration": "10 minutes"
+    },
+    {
+      "task": "For the next round, you must agree with the majority opinion dramatically.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 turns, speak as if you’re mildly flirting with life, not people.",
+      "duration": "10 turns"
+    },
+    {
+      "task": "For the next 5 minutes, bring water to anyone who asks without questioning it.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, react to statements as if they are shocking news.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 minutes, refer to the group as ‘team’ or ‘legendary humans’.",
+      "duration": "10 minutes"
+    },
+    {
+      "task": "For the next round, you must pause thoughtfully before answering any question.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 5 minutes, narrate small actions like a documentary voiceover.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next 10 turns, respond with confidence even when unsure.",
+      "duration": "10 turns"
+    },
+    {
+      "task": "For the next round, you are responsible for starting at least one group conversation.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 5 minutes, laugh politely at jokes even if they’re bad.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next 10 turns, use optimistic language no matter the topic.",
+      "duration": "10 turns"
+    },
+    {
+      "task": "For the next 5 minutes, introduce every sentence with 'Fun fact:' even if it's not a fact.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, speak as if you are a nature documentary narrator observing the group.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 turns, give a dramatic rating out of 10 to everything anyone says.",
+      "duration": "10 turns"
+    },
+    {
+      "task": "For the next 5 minutes, act as the group's unofficial cheerleader — celebrate every small win.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, pretend every answer you hear is the most interesting thing you've ever learned.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 minutes, phrase everything as a motivational quote.",
+      "duration": "10 minutes"
+    },
+    {
+      "task": "For the next 5 minutes, begin every response with 'As my grandma used to say…' and improvise wisdom.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, you are the group's self-appointed DJ — suggest a background song for every moment.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 turns, translate what people say into overly formal language.",
+      "duration": "10 turns"
+    },
+    {
+      "task": "For the next 5 minutes, react to everything with a movie critic review style.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, you must offer an imaginary snack to someone before you speak.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 minutes, end every sentence with a random trivia fact (make them up if needed).",
+      "duration": "10 minutes"
+    },
+    {
+      "task": "For the next 5 minutes, give everyone a spontaneous nickname and only use those names.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, act as the group's official timekeeper — announce how long everything is taking.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 turns, respond to every question as if you are giving a TED talk.",
+      "duration": "10 turns"
+    },
+    {
+      "task": "For the next 5 minutes, describe everything around you as if you're an estate agent giving a tour.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, pretend you have an imaginary assistant and consult them before answering.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 minutes, add sound effects to everything you describe.",
+      "duration": "10 minutes"
+    },
+    {
+      "task": "For the next 5 minutes, give a weather-report-style update on the group's mood.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, react to every statement with a conspiracy theory twist.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 turns, speak as if you are narrating a sports play-by-play.",
+      "duration": "10 turns"
+    },
+    {
+      "task": "For the next 5 minutes, you are the group's wellness coach — suggest a deep breath or stretch randomly.",
+      "duration": "5 minutes"
+    },
+    {
+      "task": "For the next round, give a dramatic 'previously on…' recap before each new topic.",
+      "duration": "1 round"
+    },
+    {
+      "task": "For the next 10 minutes, award invisible trophies to people for mundane achievements.",
+      "duration": "10 minutes"
+    }
   ]
 };

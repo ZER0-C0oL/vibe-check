@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temporary Personality Disorder</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <style>
+    /* --- Role assignment card --- */
+    .role-card {
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff;
+      padding: 2rem;
+      border-radius: var(--radius);
+      text-align: center;
+      margin-bottom: 1.5rem;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      animation: scaleIn 0.4s ease both;
+      box-shadow: 0 8px 30px rgba(108, 92, 231, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .role-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .role-card .task-text {
+      font-size: 1.2rem;
+      font-weight: 600;
+      line-height: 1.5;
+      position: relative;
+      z-index: 1;
+    }
+    .role-card .duration-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.25);
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      position: relative;
+      z-index: 1;
+      backdrop-filter: blur(4px);
+    }
+
+    /* --- Player name banner --- */
+    .player-banner {
+      background: linear-gradient(135deg, var(--accent), #fdcb6e);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      animation: fadeInUp 0.3s ease both;
+      box-shadow: 0 2px 12px rgba(253, 203, 110, 0.35);
+    }
+    .player-banner .emoji {
+      font-size: 1.4rem;
+    }
+
+    /* --- Intro card --- */
+    .intro-card {
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: var(--radius);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .intro-card h2 {
+      margin-bottom: 0.75rem;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .intro-card p {
+      color: var(--text-light);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* --- Active roles tracker --- */
+    .active-roles {
+      margin-top: 1.5rem;
+      animation: fadeInUp 0.4s ease 0.1s both;
+    }
+    .active-roles h3 {
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+    .active-role-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(135deg, rgba(241, 240, 255, 0.9), rgba(237, 233, 254, 0.7));
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.5rem;
+      animation: slideInLeft 0.3s ease both;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .active-role-item:hover {
+      transform: translateX(4px);
+      box-shadow: 0 2px 12px rgba(108,92,231,0.12);
+    }
+    .active-role-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .active-role-info .role-player {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--primary);
+    }
+    .active-role-info .role-task {
+      font-size: 0.82rem;
+      color: var(--text-light);
+      margin-top: 0.15rem;
+      overflow-wrap: break-word;
+    }
+    .complete-btn {
+      background: none;
+      border: 2px solid var(--success);
+      color: var(--success);
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .complete-btn:hover {
+      background: var(--success);
+      color: #fff;
+    }
+    .failed-btn {
+      background: none;
+      border: 2px solid var(--danger);
+      color: var(--danger);
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .failed-btn:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+    .role-actions {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+    .role-timer {
+      margin-top: 0.25rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .role-timer.expired {
+      color: var(--danger);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      padding: 1rem;
+      background: rgba(255,255,255,0.5);
+      border-radius: var(--radius-sm);
+    }
+
+    /* --- Skip button --- */
+    .skip-btn {
+      background: none;
+      border: 2px solid rgba(108,92,231,0.3);
+      color: var(--text-light);
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .skip-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* --- History section --- */
+    .history-section {
+      margin-top: 1.5rem;
+      animation: fadeInUp 0.4s ease 0.2s both;
+    }
+    .history-section h3 {
+      margin-bottom: 0.75rem;
+    }
+    .history-item {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.82rem;
+      color: var(--text-light);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      display: flex;
+      gap: 0.5rem;
+      align-items: baseline;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-item .h-name { font-weight: 600; color: var(--text); }
+    .history-item .h-check { color: var(--success); }
+    .history-item .h-fail { color: var(--danger); }
+
+    /* --- Confetti burst --- */
+    @keyframes confettiFall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(60px) rotate(360deg); opacity: 0; }
+    }
+    .confetti-burst {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 999;
+      overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      animation: confettiFall 1.2s ease forwards;
+    }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="game-page">
+    <!-- Header -->
+    <div class="game-header">
+      <h1>🎭 Temporary Personality Disorder</h1>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='../games.html'">← Back</button>
+    </div>
+
+    <!-- Intro / Instructions -->
+    <div class="intro-card" id="introCard">
+      <h2>How It Works</h2>
+      <p>
+        Each round, a random player is assigned a lighthearted behavioral role or task to follow for a short duration.
+        It's all about fun tone changes, small helpful actions, and light role-play. <br /><br />
+        Tap <strong>Assign a Role</strong> to begin!
+      </p>
+    </div>
+
+    <!-- Assignment display (hidden until first assignment) -->
+    <div id="assignmentArea" class="hidden">
+      <div class="player-banner" id="playerBanner">
+        <span class="emoji">🎯</span> <span id="playerName">Player</span>
+      </div>
+      <div class="role-card" id="roleCard">
+        <div class="task-text" id="taskText">Task goes here</div>
+        <div class="duration-badge" id="durationBadge">⏱ Duration</div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" style="flex:1" id="assignBtn" onclick="assignRole()">🎭 Assign a Role</button>
+      </div>
+      <div class="hidden" id="assignedActions" style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" style="flex:1" onclick="assignRole()">🔄 Next Assignment</button>
+        <button class="skip-btn" onclick="skipRole()">⏭ Skip</button>
+      </div>
+    </div>
+
+    <!-- Active roles tracker -->
+    <div class="active-roles" id="activeRolesSection">
+      <h3>🔥 Active Roles</h3>
+      <div id="activeRolesList">
+        <div class="empty-state">No active roles yet — assign one above!</div>
+      </div>
+    </div>
+
+    <!-- Completed history -->
+    <div class="history-section" id="historySection" class="hidden">
+      <h3>✅ Completed</h3>
+      <div id="historyList"></div>
+    </div>
+
+    <!-- Back link -->
+    <button class="btn btn-outline btn-block mt-3" onclick="window.location.href='../games.html'">← Back to Games</button>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../js/state.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/prompts.js"></script>
+  <script>
+    /* ---- Prompts & participants ---- */
+    const PROMPTS = GAME_PROMPTS['personality-disorder'];
+    const participants = getParticipants();
+
+    /* ---- Game state ---- */
+    let usedPromptIndices = [];
+    let activeRoles = [];   // { player, task, duration, id, status, endAt }
+    let completedRoles = []; // same shape + status
+    let assignCounter = 0;
+    let timerInterval = null;
+
+    /* ---- Helpers ---- */
+    function escapeHTML(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function pickPrompt() {
+      const available = PROMPTS.map((p, i) => i).filter(i => !usedPromptIndices.includes(i));
+      if (available.length === 0) usedPromptIndices = [];
+      const pool = available.length > 0 ? available : PROMPTS.map((_, i) => i);
+      const idx = getRandomItem(pool);
+      usedPromptIndices.push(idx);
+      return PROMPTS[idx];
+    }
+
+    function pickPlayer() {
+      // Prefer players without active roles
+      const activePlayers = activeRoles.map(r => r.player);
+      const available = participants.filter(p => !activePlayers.includes(p.name));
+      const pool = available.length > 0 ? available : participants;
+      return getRandomItem(pool);
+    }
+
+    function getDurationSeconds(durationText) {
+      const match = String(durationText).toLowerCase().match(/(\d+)\s*minute/);
+      if (!match) return null;
+      return Number(match[1]) * 60;
+    }
+
+    function formatTimer(totalSeconds) {
+      const safeSeconds = Math.max(0, totalSeconds);
+      const minutes = Math.floor(safeSeconds / 60);
+      const seconds = safeSeconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function getRoleTimerLabel(role) {
+      if (!role.endAt) return `⏱ ${escapeHTML(role.duration)} (manual tracking)`;
+      const remaining = Math.max(0, Math.ceil((role.endAt - Date.now()) / 1000));
+      return `⏱ ${formatTimer(remaining)} remaining`;
+    }
+
+    function ensureTimerLoop() {
+      if (timerInterval) return;
+      timerInterval = setInterval(() => {
+        if (activeRoles.length === 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          return;
+        }
+        updateRoleTimers();
+      }, 1000);
+    }
+
+    function updateRoleTimers() {
+      const timerNodes = document.querySelectorAll('.role-timer[data-role-id]');
+      timerNodes.forEach(node => {
+        const roleId = Number(node.getAttribute('data-role-id'));
+        const role = activeRoles.find(r => r.id === roleId);
+        if (!role) return;
+
+        node.textContent = getRoleTimerLabel(role);
+        const isExpired = role.endAt && (role.endAt - Date.now()) <= 0;
+        node.classList.toggle('expired', Boolean(isExpired));
+      });
+    }
+
+    /* ---- Assign a role ---- */
+    function assignRole() {
+      if (participants.length === 0) {
+        alert('No participants found! Go back to the lobby and add players.');
+        return;
+      }
+
+      const player = pickPlayer();
+      const prompt = pickPrompt();
+      assignCounter++;
+
+      const role = {
+        id: assignCounter,
+        player: player.name,
+        task: prompt.task,
+        duration: prompt.duration,
+        status: 'active',
+        endAt: null
+      };
+
+      const durationSeconds = getDurationSeconds(prompt.duration);
+      if (durationSeconds) {
+        role.endAt = Date.now() + (durationSeconds * 1000);
+      }
+
+      // Add to active list
+      activeRoles.push(role);
+
+      // Update UI
+      document.getElementById('introCard').classList.add('hidden');
+      document.getElementById('assignmentArea').classList.remove('hidden');
+      document.getElementById('assignBtn').classList.add('hidden');
+      document.getElementById('assignedActions').classList.remove('hidden');
+      document.getElementById('assignedActions').style.display = 'flex';
+
+      // Show assignment
+      document.getElementById('playerName').textContent = player.name;
+      document.getElementById('taskText').textContent = prompt.task;
+      document.getElementById('durationBadge').textContent = `⏱ ${prompt.duration}`;
+
+      // Re-trigger animation
+      const roleCard = document.getElementById('roleCard');
+      roleCard.style.animation = 'none';
+      roleCard.offsetHeight; // reflow
+      roleCard.style.animation = 'scaleIn 0.4s ease both';
+
+      const banner = document.getElementById('playerBanner');
+      banner.style.animation = 'none';
+      banner.offsetHeight;
+      banner.style.animation = 'fadeInUp 0.3s ease both';
+
+      renderActiveRoles();
+      ensureTimerLoop();
+    }
+
+    /* ---- Skip: re-roll player + prompt without adding to active ---- */
+    function skipRole() {
+      // Remove the last assigned role (the one currently displayed) from active
+      if (activeRoles.length > 0) {
+        const lastRole = activeRoles[activeRoles.length - 1];
+        // Only remove if it matches the currently displayed assignment
+        if (lastRole.id === assignCounter) {
+          activeRoles.pop();
+        }
+      }
+
+      const player = pickPlayer();
+      const prompt = pickPrompt();
+      assignCounter++;
+
+      const role = {
+        id: assignCounter,
+        player: player.name,
+        task: prompt.task,
+        duration: prompt.duration,
+        status: 'active',
+        endAt: null
+      };
+
+      const durationSeconds = getDurationSeconds(prompt.duration);
+      if (durationSeconds) {
+        role.endAt = Date.now() + (durationSeconds * 1000);
+      }
+
+      activeRoles.push(role);
+
+      // Show new assignment
+      document.getElementById('playerName').textContent = player.name;
+      document.getElementById('taskText').textContent = prompt.task;
+      document.getElementById('durationBadge').textContent = `⏱ ${prompt.duration}`;
+
+      // Re-trigger animation
+      const roleCard = document.getElementById('roleCard');
+      roleCard.style.animation = 'none';
+      roleCard.offsetHeight;
+      roleCard.style.animation = 'scaleIn 0.4s ease both';
+
+      const banner = document.getElementById('playerBanner');
+      banner.style.animation = 'none';
+      banner.offsetHeight;
+      banner.style.animation = 'fadeInUp 0.3s ease both';
+
+      renderActiveRoles();
+      ensureTimerLoop();
+    }
+
+    /* ---- Mark role as complete ---- */
+    function completeRole(roleId) {
+      const idx = activeRoles.findIndex(r => r.id === roleId);
+      if (idx === -1) return;
+
+      const role = activeRoles.splice(idx, 1)[0];
+      role.status = 'done';
+      completedRoles.push(role);
+
+      // Award a point
+      saveGameScores('personality-disorder', { [role.player]: 1 });
+
+      // Mini confetti
+      spawnConfetti();
+
+      renderActiveRoles();
+      renderHistory();
+    }
+
+    /* ---- Mark role as failed ---- */
+    function failRole(roleId) {
+      const idx = activeRoles.findIndex(r => r.id === roleId);
+      if (idx === -1) return;
+
+      const role = activeRoles.splice(idx, 1)[0];
+      role.status = 'failed';
+      completedRoles.push(role);
+
+      renderActiveRoles();
+      renderHistory();
+    }
+
+    /* ---- Render active roles ---- */
+    function renderActiveRoles() {
+      const container = document.getElementById('activeRolesList');
+      if (activeRoles.length === 0) {
+        container.innerHTML = '<div class="empty-state">No active roles — assign one above!</div>';
+        return;
+      }
+      container.innerHTML = activeRoles.map((r, i) => `
+        <div class="active-role-item" style="animation-delay: ${i * 0.05}s">
+          <div class="active-role-info">
+            <div class="role-player">${escapeHTML(r.player)}</div>
+            <div class="role-task">${escapeHTML(r.task)} <em>(${escapeHTML(r.duration)})</em></div>
+            <div class="role-timer ${r.endAt && (r.endAt - Date.now()) <= 0 ? 'expired' : ''}" data-role-id="${r.id}">${getRoleTimerLabel(r)}</div>
+          </div>
+          <div class="role-actions">
+            <button class="complete-btn" onclick="completeRole(${r.id})">✓ Done</button>
+            <button class="failed-btn" onclick="failRole(${r.id})">✕ Failed</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* ---- Render completed history ---- */
+    function renderHistory() {
+      const section = document.getElementById('historySection');
+      const container = document.getElementById('historyList');
+      if (completedRoles.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = '';
+      container.innerHTML = completedRoles.slice().reverse().map(r => `
+        <div class="history-item">
+          <span class="${r.status === 'failed' ? 'h-fail' : 'h-check'}">${r.status === 'failed' ? '✕' : '✓'}</span>
+          <span class="h-name">${escapeHTML(r.player)}</span>
+          <span>${escapeHTML(r.task)} (${r.status === 'failed' ? 'Failed' : 'Done'})</span>
+        </div>
+      `).join('');
+    }
+
+    /* ---- Mini confetti effect ---- */
+    function spawnConfetti() {
+      const colors = ['#6c5ce7', '#fd79a8', '#ffeaa7', '#00b894', '#fdcb6e', '#e17055'];
+      const burst = document.createElement('div');
+      burst.className = 'confetti-burst';
+      for (let i = 0; i < 24; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = `${Math.random() * 100}%`;
+        piece.style.top = `${Math.random() * 40}%`;
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = `${Math.random() * 0.4}s`;
+        piece.style.animationDuration = `${0.8 + Math.random() * 0.8}s`;
+        burst.appendChild(piece);
+      }
+      document.body.appendChild(burst);
+      setTimeout(() => burst.remove(), 2000);
+    }
+
+    /* ---- Init ---- */
+    renderHistory();
+  </script>
+</body>
+</html>

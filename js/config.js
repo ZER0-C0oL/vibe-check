@@ -52,5 +52,12 @@ const GAMES = [
     description: "Vote on who fits the scenario — prepare for friendly betrayal!",
     file: "games/most-likely.html",
     minPlayers: 3
+  },
+  {
+    id: "personality-disorder",
+    title: "Temporary Personality Disorder",
+    description: "Get assigned a hilarious behavioral role — keep it up or get called out!",
+    file: "games/temporary-personality-disorder.html",
+    minPlayers: 2
   }
 ];

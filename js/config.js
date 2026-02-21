@@ -59,5 +59,12 @@ const GAMES = [
     description: "Get assigned a hilarious behavioral role — keep it up or get called out!",
     file: "games/temporary-personality-disorder.html",
     minPlayers: 2
+  },
+  {
+    id: "imposter",
+    title: "ID the Imposter",
+    description: "One player gets a subtle prompt twist — can the group spot them?",
+    file: "games/one-of-you-is-fake.html",
+    minPlayers: 3
   }
 ];

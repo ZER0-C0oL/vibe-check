@@ -28,6 +28,7 @@ A lightweight, browser-based party games platform built with **HTML, CSS, and Va
 | **Guess the Liar** | One player lies, everyone guesses | 3 |
 | **Who's Most Likely To** | Vote on who fits the scenario | 3 |
 | **Temporary Personality Disorder** | Timed role assignments with tasks | 2 |
+| **ID the Imposter** | One player gets a subtle prompt twist | 3 |
 
 ## Project Structure
 
@@ -52,7 +53,10 @@ A lightweight, browser-based party games platform built with **HTML, CSS, and Va
 │   ├── guess-the-liar.html   # Guess the Liar
 │   ├── most-likely.html       # Who's Most Likely To
 │   ├── temporary-personality-disorder.html # Temporary Personality Disorder
+│   ├── one-of-you-is-fake.html # ID the Imposter
 │   └── template.html     # Boilerplate for new games
+├── /data
+│   └── one-of-you-is-fake.json # ID the Imposter prompts
 ├── /css
 │   ├── global.css        # Base styles
 │   └── cards.css         # Game card grid styles

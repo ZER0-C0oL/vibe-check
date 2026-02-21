@@ -1,0 +1,134 @@
+[
+  {
+    "realPrompt": "Describe a good weekend.",
+    "fakePrompt": "Describe a boring weekend."
+  },
+  {
+    "realPrompt": "Name a habit that annoys you.",
+    "fakePrompt": "Name a habit you secretly do."
+  },
+  {
+    "realPrompt": "What makes a party fun?",
+    "fakePrompt": "What makes a party boring?"
+  },
+  {
+    "realPrompt": "Give advice to someone starting a new job.",
+    "fakePrompt": "Give advice to someone quitting a job."
+  },
+  {
+    "realPrompt": "What’s something you enjoy doing alone?",
+    "fakePrompt": "What’s something you avoid doing alone?"
+  },
+  {
+    "realPrompt": "Describe your ideal vacation.",
+    "fakePrompt": "Describe a vacation you would hate."
+  },
+  {
+    "realPrompt": "What’s a small thing that improves your day?",
+    "fakePrompt": "What’s a small thing that ruins your day?"
+  },
+  {
+    "realPrompt": "What makes a conversation enjoyable?",
+    "fakePrompt": "What makes a conversation uncomfortable?"
+  },
+  {
+    "realPrompt": "What’s a good way to relax?",
+    "fakePrompt": "What’s a bad way to relax?"
+  },
+  {
+    "realPrompt": "What’s something people should do more often?",
+    "fakePrompt": "What’s something people should stop doing?"
+  },
+  {
+    "realPrompt": "Describe a good group trip.",
+    "fakePrompt": "Describe a stressful group trip."
+  },
+  {
+    "realPrompt": "What makes someone trustworthy?",
+    "fakePrompt": "What makes someone suspicious?"
+  },
+  {
+    "realPrompt": "What’s a good first impression?",
+    "fakePrompt": "What’s a bad first impression?"
+  },
+  {
+    "realPrompt": "What’s something that feels productive?",
+    "fakePrompt": "What’s something that looks productive but isn’t?"
+  },
+  {
+    "realPrompt": "What’s a good way to spend free time?",
+    "fakePrompt": "What’s a waste of free time?"
+  },
+  {
+    "realPrompt": "What makes a place feel welcoming?",
+    "fakePrompt": "What makes a place feel awkward?"
+  },
+  {
+    "realPrompt": "What’s a habit worth building?",
+    "fakePrompt": "What’s a habit worth breaking?"
+  },
+  {
+    "realPrompt": "Describe a good teammate.",
+    "fakePrompt": "Describe a difficult teammate."
+  },
+  {
+    "realPrompt": "What makes communication effective?",
+    "fakePrompt": "What makes communication confusing?"
+  },
+  {
+    "realPrompt": "What’s something people appreciate?",
+    "fakePrompt": "What’s something people complain about?"
+  },
+  {
+    "realPrompt": "What’s a sign someone is confident?",
+    "fakePrompt": "What’s a sign someone is pretending to be confident?"
+  },
+  {
+    "realPrompt": "Describe a perfect morning.",
+    "fakePrompt": "Describe a perfect evening."
+  },
+  {
+    "realPrompt": "What makes a meeting productive?",
+    "fakePrompt": "What makes a meeting exhausting?"
+  },
+  {
+    "realPrompt": "What’s a good team tradition?",
+    "fakePrompt": "What’s a weird team tradition?"
+  },
+  {
+    "realPrompt": "What makes a hobby relaxing?",
+    "fakePrompt": "What makes a hobby stressful?"
+  },
+  {
+    "realPrompt": "Describe a helpful coworker.",
+    "fakePrompt": "Describe a coworker who means well but overdoes it."
+  },
+  {
+    "realPrompt": "What’s a great group dinner?",
+    "fakePrompt": "What’s a chaotic group dinner?"
+  },
+  {
+    "realPrompt": "What makes a movie night fun?",
+    "fakePrompt": "What makes a movie night awkward?"
+  },
+  {
+    "realPrompt": "What’s a good icebreaker?",
+    "fakePrompt": "What’s a bad icebreaker?"
+  },
+  {
+    "realPrompt": "Describe a good road trip.",
+    "fakePrompt": "Describe a cramped road trip."
+  },
+  {
+    "realPrompt": "What makes a workspace comfortable?",
+    "fakePrompt": "What makes a workspace distracting?"
+  },
+  {
+    "realPrompt": "What’s a great party playlist vibe?",
+    "fakePrompt": "What’s a strange party playlist vibe?"
+  },
+  {
+    "realPrompt": "Describe a great host.",
+    "fakePrompt": "Describe a host who tries too hard."
+  }
+]

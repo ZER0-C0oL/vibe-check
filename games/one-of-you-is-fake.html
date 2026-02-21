@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ID the Imposter</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <style>
+    .prompt-card {
+      background: rgba(255,255,255,0.85);
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .prompt-text {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 0.5rem;
+    }
+    .player-banner {
+      background: linear-gradient(135deg, var(--accent), #fdcb6e);
+      color: var(--text);
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .vote-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+    }
+    .vote-option {
+      flex: 1 1 calc(50% - 0.3rem);
+      min-width: 120px;
+      padding: 0.85rem 1rem;
+      border: 2px solid #dfe6e9;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.85);
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: var(--font);
+      font-size: 0.95rem;
+      transition: all 0.25s ease;
+    }
+    .vote-option:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+    .vote-option.selected {
+      border-color: var(--primary);
+      background: var(--gradient-primary);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(108, 92, 231, 0.25);
+    }
+    .reveal-card {
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff;
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .reveal-card .name {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-top: 0.5rem;
+    }
+    .note {
+      color: var(--text-light);
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 0.75rem;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="game-page">
+    <div class="game-header">
+      <h1>🕵️ ID the Imposter</h1>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='../games.html'">← Back</button>
+    </div>
+
+    <!-- Phase 1: Intro -->
+    <div id="phase1">
+      <div class="prompt-card">
+        <div class="prompt-text">Get ready for the prompt</div>
+        <p class="note">Everyone answers out loud. One player sees a slightly different prompt.</p>
+      </div>
+      <button class="btn btn-primary btn-block mt-3" id="startPromptBtn" onclick="startPromptPhase()">Show Prompt</button>
+      <button class="btn btn-outline btn-block mt-2" onclick="nextPrompt()">⏭ Skip Prompt</button>
+    </div>
+
+    <!-- Phase 2: Prompt Reveal -->
+    <div id="phase2" class="hidden">
+      <div class="player-banner" id="playerBanner"></div>
+      <div class="prompt-card">
+        <div class="prompt-text" id="promptText"></div>
+      </div>
+      <p class="note" id="promptNote"></p>
+      <button class="btn btn-secondary btn-block mt-3" id="nextPlayerBtn" onclick="nextPlayerPrompt()">Next Player →</button>
+      <button class="btn btn-primary btn-block mt-2 hidden" id="startVoteBtn" onclick="startVoting()">🗳️ Vote the Fake</button>
+    </div>
+
+    <!-- Phase 3: Voting -->
+    <div id="phase3" class="hidden">
+      <div class="prompt-card">
+        <div class="prompt-text">Who is the Fake?</div>
+        <div class="note" id="voterBanner"></div>
+        <div class="vote-grid" id="voteGrid"></div>
+      </div>
+      <button class="btn btn-primary btn-block mt-3 hidden" id="confirmVoteBtn" onclick="confirmVote()">Lock In & Pass Device</button>
+    </div>
+
+    <!-- Phase 4: Reveal -->
+    <div id="phase4" class="hidden">
+      <div class="reveal-card">
+        <div>🕵️ The Fake Was</div>
+        <div class="name" id="fakeNameReveal"></div>
+      </div>
+      <div class="prompt-card mt-3">
+        <div class="prompt-text" id="realPromptReveal"></div>
+        <div class="note" id="fakePromptReveal"></div>
+      </div>
+      <div class="note" id="voteSummary"></div>
+      <button class="btn btn-secondary btn-block mt-3" onclick="nextRound()">🔄 Next Round</button>
+      <button class="btn btn-outline btn-block mt-2" onclick="window.location.href='../games.html'">← Back to Games</button>
+    </div>
+  </div>
+
+  <script src="../js/state.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/prompts.js"></script>
+  <script src="../js/room-game-sync.js"></script>
+  <script>
+    const participants = getParticipants();
+    const PROMPT_PAIRS = GAME_PROMPTS['imposter'] || [];
+    const isRoom = typeof isRoomMode === 'function' && isRoomMode();
+    const session = typeof getRoomSession === 'function' ? getRoomSession() : { playerName: '' };
+
+    let usedPromptIndices = [];
+    let currentPair = null;
+    let fakeIndex = -1;
+    let phase = 1;
+    let currentPlayerIndex = 0;
+    let votes = [];
+    let currentVoterIndex = 0;
+    let currentChoice = null;
+    let warned = false;
+
+    const sync = createRoomGameSync({
+      gameId: 'imposter',
+      getState: () => ({
+        phase,
+        fakeIndex,
+        currentPair,
+        usedPromptIndices,
+        currentPlayerIndex,
+        votes,
+        currentVoterIndex,
+        turnName: phase === 3
+          ? (participants[currentVoterIndex]?.name || '')
+          : (!isRoom && phase === 2 ? (participants[currentPlayerIndex]?.name || '') : '')
+      }),
+      applyState: (state) => {
+        if (!state) return;
+        phase = state.phase || 1;
+        fakeIndex = typeof state.fakeIndex === 'number' ? state.fakeIndex : fakeIndex;
+        currentPair = state.currentPair || currentPair;
+        usedPromptIndices = Array.isArray(state.usedPromptIndices) ? state.usedPromptIndices : usedPromptIndices;
+        currentPlayerIndex = typeof state.currentPlayerIndex === 'number' ? state.currentPlayerIndex : currentPlayerIndex;
+        votes = Array.isArray(state.votes) ? state.votes : votes;
+        currentVoterIndex = typeof state.currentVoterIndex === 'number' ? state.currentVoterIndex : currentVoterIndex;
+        renderPhase();
+      }
+    });
+
+    function ensureCanInteract() {
+      if (sync.canInteract()) return true;
+      if (!warned) {
+        alert('Waiting for the host or your turn.');
+        warned = true;
+      }
+      return false;
+    }
+
+    function setPhase(n) {
+      phase = n;
+      [1,2,3,4].forEach(p => document.getElementById(`phase${p}`).classList.toggle('hidden', p !== n));
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function pickPromptPair() {
+      const available = PROMPT_PAIRS.map((_, i) => i).filter(i => !usedPromptIndices.includes(i));
+      if (available.length === 0) usedPromptIndices = [];
+      const pool = available.length > 0 ? available : PROMPT_PAIRS.map((_, i) => i);
+      const idx = getRandomItem(pool);
+      usedPromptIndices.push(idx);
+      return PROMPT_PAIRS[idx];
+    }
+
+    function startRound() {
+      if (participants.length < 3) {
+        alert('Add at least 3 participants to play.');
+        return;
+      }
+      if (PROMPT_PAIRS.length === 0) {
+        alert('No prompts found. Check prompts.js');
+        return;
+      }
+      // Randomly assign the fake player
+      fakeIndex = Math.floor(Math.random() * participants.length);
+      currentPair = pickPromptPair();
+      currentPlayerIndex = 0;
+      votes = [];
+      currentVoterIndex = 0;
+      currentChoice = null;
+      setPhase(1);
+      renderPhase();
+      sync.publish();
+    }
+
+    function renderPhase() {
+      setPhase(phase);
+
+      if (phase === 2) {
+        showPromptForCurrent();
+      }
+      if (phase === 3) {
+        showVoter();
+      }
+      if (phase === 4) {
+        showReveal();
+      }
+    }
+
+    function startPromptPhase() {
+      if (!ensureCanInteract()) return;
+      phase = 2;
+      renderPhase();
+      sync.publish();
+    }
+
+    function showPromptForCurrent() {
+      if (!currentPair) return;
+
+      const promptText = document.getElementById('promptText');
+      const promptNote = document.getElementById('promptNote');
+      const playerBanner = document.getElementById('playerBanner');
+      const nextBtn = document.getElementById('nextPlayerBtn');
+      const voteBtn = document.getElementById('startVoteBtn');
+
+      if (isRoom) {
+        const myName = session.playerName || '';
+        const myIndex = participants.findIndex(p => p.name === myName);
+        const isFake = myIndex === fakeIndex;
+        playerBanner.textContent = myName ? `Your prompt` : 'Your prompt';
+        promptText.textContent = isFake ? currentPair.fakePrompt : currentPair.realPrompt;
+        promptNote.textContent = 'Answer out loud. Do not reveal which prompt you saw.';
+        nextBtn.classList.add('hidden');
+        voteBtn.classList.toggle('hidden', !sync.getHostInfo().isHost);
+      } else {
+        const player = participants[currentPlayerIndex];
+        const isFake = currentPlayerIndex === fakeIndex;
+        playerBanner.textContent = `${player.name}'s prompt`;
+        promptText.textContent = isFake ? currentPair.fakePrompt : currentPair.realPrompt;
+        promptNote.textContent = 'Show this prompt, then pass the device.';
+        nextBtn.classList.remove('hidden');
+        voteBtn.classList.add('hidden');
+
+        if (currentPlayerIndex >= participants.length - 1) {
+          nextBtn.classList.add('hidden');
+          voteBtn.classList.remove('hidden');
+        }
+      }
+    }
+
+    function nextPlayerPrompt() {
+      if (!ensureCanInteract()) return;
+      currentPlayerIndex++;
+      if (currentPlayerIndex >= participants.length) {
+        startVoting();
+        return;
+      }
+      showPromptForCurrent();
+      sync.publish();
+    }
+
+    function nextPrompt() {
+      if (!ensureCanInteract()) return;
+      currentPair = pickPromptPair();
+      renderPhase();
+      sync.publish();
+    }
+
+    function startVoting() {
+      if (!ensureCanInteract()) return;
+      phase = 3;
+      currentVoterIndex = 0;
+      currentChoice = null;
+      votes = [];
+      showVoter();
+      sync.publish();
+    }
+
+    function showVoter() {
+      if (currentVoterIndex >= participants.length) {
+        phase = 4;
+        showReveal();
+        sync.publish();
+        return;
+      }
+      const player = participants[currentVoterIndex];
+      document.getElementById('voterBanner').textContent = `🗳️ ${player.name}'s turn — who is the Fake?`;
+      currentChoice = null;
+      document.getElementById('confirmVoteBtn').classList.add('hidden');
+
+      const grid = document.getElementById('voteGrid');
+      grid.innerHTML = participants.map((p, i) => `
+        <button class="vote-option" onclick="selectTarget(${i}, this)">${escapeHTML(p.name)}</button>
+      `).join('');
+    }
+
+    function selectTarget(idx, btn) {
+      if (!ensureCanInteract()) return;
+      currentChoice = participants[idx].name;
+      document.querySelectorAll('.vote-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('confirmVoteBtn').classList.remove('hidden');
+    }
+
+    function confirmVote() {
+      if (!ensureCanInteract()) return;
+      if (!currentChoice) return;
+      votes.push({ voter: participants[currentVoterIndex].name, target: currentChoice });
+      currentVoterIndex++;
+      showVoter();
+      sync.publish();
+    }
+
+    function showReveal() {
+      const fakeName = participants[fakeIndex]?.name || 'Unknown';
+      document.getElementById('fakeNameReveal').textContent = fakeName;
+      document.getElementById('realPromptReveal').textContent = `Real prompt: ${currentPair ? currentPair.realPrompt : ''}`;
+      document.getElementById('fakePromptReveal').textContent = `Fake prompt: ${currentPair ? currentPair.fakePrompt : ''}`;
+
+      if (!votes.length) {
+        document.getElementById('voteSummary').textContent = 'No votes recorded.';
+        return;
+      }
+
+      const tally = {};
+      votes.forEach(v => { tally[v.target] = (tally[v.target] || 0) + 1; });
+      const summary = Object.entries(tally)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => `${escapeHTML(name)}: ${count}`)
+        .join(' • ');
+      document.getElementById('voteSummary').textContent = summary;
+    }
+
+    function nextRound() {
+      if (!ensureCanInteract()) return;
+      startRound();
+    }
+
+    async function init() {
+      await sync.init();
+      const hostInfo = sync.getHostInfo();
+      if (hostInfo.isHost || !hostInfo.isRoomMode) {
+        startRound();
+      } else {
+        renderPhase();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

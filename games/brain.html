@@ -479,6 +479,7 @@
   <script src="../js/state.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/prompts.js"></script>
+  <script src="../js/room-game-sync.js"></script>
   <script>
     /* ---- Prompts pool ---- */
     const PROMPTS = GAME_PROMPTS.brain;
@@ -500,11 +501,77 @@
     let selectedAnswerIdx = null;
     let selectedNameIdx = null;
     let currentMatches = {};     // answerIdx -> nameIdx
+    let currentPhase = 1;
+    let interactionBlockedAlertShown = false;
+
+    const sync = createRoomGameSync({
+      gameId: 'brain',
+      getState: () => ({
+        phase: currentPhase,
+        currentPrompt,
+        responses,
+        shuffledResponses,
+        shuffledNames,
+        currentAnswerIndex,
+        currentMatcherIndex,
+        scores,
+        allGuesses,
+        selectedAnswerIdx,
+        selectedNameIdx,
+        currentMatches,
+        turnName: currentPhase === 2
+          ? (participants[currentAnswerIndex] ? participants[currentAnswerIndex].name : '')
+          : (currentPhase === 3 && participants[currentMatcherIndex] ? participants[currentMatcherIndex].name : '')
+      }),
+      applyState: (snapshot) => {
+        if (!snapshot || typeof snapshot !== 'object') return;
+        currentPrompt = snapshot.currentPrompt || currentPrompt;
+        responses = Array.isArray(snapshot.responses) ? snapshot.responses : [];
+        shuffledResponses = Array.isArray(snapshot.shuffledResponses) ? snapshot.shuffledResponses : [];
+        shuffledNames = Array.isArray(snapshot.shuffledNames) ? snapshot.shuffledNames : [];
+        currentAnswerIndex = Number(snapshot.currentAnswerIndex || 0);
+        currentMatcherIndex = Number(snapshot.currentMatcherIndex || 0);
+        scores = snapshot.scores && typeof snapshot.scores === 'object' ? snapshot.scores : scores;
+        allGuesses = snapshot.allGuesses && typeof snapshot.allGuesses === 'object' ? snapshot.allGuesses : {};
+        selectedAnswerIdx = snapshot.selectedAnswerIdx === null || snapshot.selectedAnswerIdx === undefined
+          ? null
+          : Number(snapshot.selectedAnswerIdx);
+        selectedNameIdx = snapshot.selectedNameIdx === null || snapshot.selectedNameIdx === undefined
+          ? null
+          : Number(snapshot.selectedNameIdx);
+        currentMatches = snapshot.currentMatches && typeof snapshot.currentMatches === 'object' ? snapshot.currentMatches : {};
+
+        const phase = Number(snapshot.phase || 1);
+        setPhase(phase);
+        if (phase === 1) {
+          document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
+        } else if (phase === 2) {
+          document.getElementById('promptReminder').querySelector('span').textContent = `"${currentPrompt}"`;
+          showAnswerForm();
+        } else if (phase === 3) {
+          document.getElementById('promptMatch').querySelector('span').textContent = `"${currentPrompt}"`;
+          showMatchRound();
+        } else {
+          showResults();
+        }
+      }
+    });
+
+    function ensureCanInteract() {
+      if (!isRoomMode()) return true;
+      if (sync.canInteract()) return true;
+      if (!interactionBlockedAlertShown) {
+        alert('Wait for your turn.');
+        interactionBlockedAlertShown = true;
+      }
+      return false;
+    }
 
     participants.forEach(p => scores[p.name] = 0);
 
     /* ---- Phase helpers ---- */
     function setPhase(num) {
+      currentPhase = num;
       [1, 2, 3, 4].forEach(n => {
         document.getElementById(`phase${n}`).classList.toggle('hidden', n !== num);
       });
@@ -524,15 +591,19 @@
     document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
 
     function skipPrompt() {
+      if (!ensureCanInteract()) return;
       currentPrompt = getRandomItem(PROMPTS);
       document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
+      sync.publish();
     }
 
     function startCollecting() {
+      if (!ensureCanInteract()) return;
       setPhase(2);
       currentAnswerIndex = 0;
       responses = [];
       showAnswerForm();
+      sync.publish();
     }
 
     /* ---- Phase 2: Collect answers ---- */
@@ -549,6 +620,7 @@
     }
 
     function submitAnswer() {
+      if (!ensureCanInteract()) return;
       const answer = document.getElementById('answerInput').value.trim();
       if (!answer) {
         alert('Please type an answer!');
@@ -557,6 +629,7 @@
       responses.push({ name: participants[currentAnswerIndex].name, answer });
       currentAnswerIndex++;
       showAnswerForm();
+      sync.publish();
     }
 
     /* ---- Phase 3: Match the Following ---- */
@@ -655,6 +728,7 @@
     }
 
     function selectAnswer(idx) {
+      if (!ensureCanInteract()) return;
       if (Object.keys(currentMatches).map(Number).includes(idx)) return;
       selectedAnswerIdx = idx;
 
@@ -663,10 +737,12 @@
         makePair();
       } else {
         renderMatchUI();
+        sync.publish();
       }
     }
 
     function selectName(idx) {
+      if (!ensureCanInteract()) return;
       if (Object.values(currentMatches).map(Number).includes(idx)) return;
       selectedNameIdx = idx;
 
@@ -675,6 +751,7 @@
         makePair();
       } else {
         renderMatchUI();
+        sync.publish();
       }
     }
 
@@ -683,14 +760,18 @@
       selectedAnswerIdx = null;
       selectedNameIdx = null;
       renderMatchUI();
+      sync.publish();
     }
 
     function removeMatch(answerIdx) {
+      if (!ensureCanInteract()) return;
       delete currentMatches[answerIdx];
       renderMatchUI();
+      sync.publish();
     }
 
     function submitMatches() {
+      if (!ensureCanInteract()) return;
       const matcher = participants[currentMatcherIndex];
       const guesses = {};
 
@@ -709,6 +790,7 @@
       allGuesses[matcher.name] = guesses;
       currentMatcherIndex++;
       showMatchRound();
+      sync.publish();
     }
 
     /* ---- Phase 4: Results ---- */
@@ -716,7 +798,9 @@
       setPhase(4);
 
       // Save scores to global scorecard
-      saveGameScores('brain', scores);
+      if (!isRoomMode() || sync.getHostInfo().isHost) {
+        saveGameScores('brain', scores);
+      }
 
       const revealDiv = document.getElementById('revealedAnswers');
 
@@ -761,6 +845,7 @@
     }
 
     function playAgain() {
+      if (!ensureCanInteract()) return;
       currentPrompt = getRandomItem(PROMPTS);
       document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
       responses = [];
@@ -774,7 +859,10 @@
       allGuesses = {};
       participants.forEach(p => scores[p.name] = 0);
       setPhase(1);
+      sync.publish();
     }
+
+    sync.init();
   </script>
 </body>
 </html>

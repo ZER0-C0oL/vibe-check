@@ -23,6 +23,22 @@
       color: var(--text-light);
       animation: fadeIn 0.5s ease 0.2s both;
     }
+    .mode-indicator {
+      margin-top: 0.4rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.82rem;
+      color: var(--text-light);
+      background: rgba(255,255,255,0.65);
+      border: 1px solid rgba(108,92,231,0.2);
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+    }
+    .mode-indicator .label {
+      color: var(--primary);
+      font-weight: 700;
+    }
     .player-warning {
       background: linear-gradient(135deg, #fff3cd, #ffeaa7);
       color: #856404;
@@ -141,6 +157,7 @@
     <div class="hub-header">
       <h1 id="hubTitle">🎮 Games</h1>
       <p id="playerCount"></p>
+      <div class="mode-indicator" id="modeIndicator"></div>
     </div>
 
     <!-- Warning if not enough players -->
@@ -173,12 +190,25 @@
   <script src="js/config.js"></script>
   <script src="js/utils.js"></script>
   <script>
+    const rawMode = localStorage.getItem('pgh_playMode');
+    if (!rawMode) navigateTo('mode-select.html');
+
+    const mode = getPlayMode();
+    const session = getRoomSession();
+
     const participants = getParticipants();
     const playerCount = participants.length;
 
     // Set title
     document.getElementById('hubTitle').textContent = `🎮 ${getPartyTitle()}`;
     document.getElementById('playerCount').textContent = `${playerCount} player${playerCount !== 1 ? 's' : ''} ready`;
+
+    const modeIndicator = document.getElementById('modeIndicator');
+    if (mode === 'room') {
+      modeIndicator.innerHTML = `<span class="label">Room Mode – Connected</span>${session.roomId ? `• ${session.roomId}` : ''}`;
+    } else {
+      modeIndicator.innerHTML = '<span class="label">Single Device Mode</span>';
+    }
 
     // Show warning if low players
     let hasWarning = false;

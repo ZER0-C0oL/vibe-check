@@ -206,6 +206,7 @@
   <script src="../js/state.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/prompts.js"></script>
+  <script src="../js/room-game-sync.js"></script>
   <script>
     const STATEMENTS = GAME_PROMPTS['defend'];
     const participants = getParticipants();
@@ -217,8 +218,69 @@
     let usedStatements = [];
     let defenderRotation = shuffleArray([...participants]);
     let defenderIdx = 0;
+    let currentPhase = 1;
+    let interactionBlockedAlertShown = false;
+
+    function getAudienceTurnName() {
+      let idx = currentVoterIndex;
+      while (idx < participants.length && participants[idx].name === currentDefender) {
+        idx++;
+      }
+      return participants[idx] ? participants[idx].name : '';
+    }
+
+    const sync = createRoomGameSync({
+      gameId: 'defend',
+      getState: () => ({
+        phase: currentPhase,
+        currentStatement,
+        currentDefender,
+        currentVoterIndex,
+        currentChoice,
+        votes,
+        usedStatements,
+        defenderRotation,
+        defenderIdx,
+        turnName: currentPhase === 2 ? getAudienceTurnName() : ''
+      }),
+      applyState: (snapshot) => {
+        if (!snapshot || typeof snapshot !== 'object') return;
+        currentStatement = snapshot.currentStatement || currentStatement;
+        currentDefender = snapshot.currentDefender || currentDefender;
+        currentVoterIndex = Number(snapshot.currentVoterIndex || 0);
+        currentChoice = snapshot.currentChoice || null;
+        votes = Array.isArray(snapshot.votes) ? snapshot.votes : [];
+        usedStatements = Array.isArray(snapshot.usedStatements) ? snapshot.usedStatements : usedStatements;
+        defenderRotation = Array.isArray(snapshot.defenderRotation) ? snapshot.defenderRotation : defenderRotation;
+        defenderIdx = Number(snapshot.defenderIdx || 0);
+
+        const phase = Number(snapshot.phase || 1);
+        setPhase(phase);
+        if (phase === 1) {
+          document.getElementById('statementDisplay').querySelector('span').textContent = `"${currentStatement}"`;
+          document.getElementById('defenderName').textContent = currentDefender;
+        } else if (phase === 2) {
+          document.getElementById('statementReminder').querySelector('span').textContent = `"${currentStatement}"`;
+          document.getElementById('defenderNameReminder').textContent = currentDefender;
+          showVoter();
+        } else {
+          showResults();
+        }
+      }
+    });
+
+    function ensureCanInteract() {
+      if (!isRoomMode()) return true;
+      if (sync.canInteract()) return true;
+      if (!interactionBlockedAlertShown) {
+        alert('Wait for your turn.');
+        interactionBlockedAlertShown = true;
+      }
+      return false;
+    }
 
     function setPhase(n) {
+      currentPhase = n;
       [1,2,3].forEach(p => document.getElementById(`phase${p}`).classList.toggle('hidden', p !== n));
     }
     function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -247,9 +309,14 @@
       document.getElementById('defenderName').textContent = currentDefender;
     }
 
-    function skipRound() { loadRound(); }
+    function skipRound() {
+      if (!ensureCanInteract()) return;
+      loadRound();
+      sync.publish();
+    }
 
     function startAudienceVote() {
+      if (!ensureCanInteract()) return;
       votes = [];
       currentVoterIndex = 0;
       currentChoice = null;
@@ -258,6 +325,7 @@
       document.getElementById('statementReminder').querySelector('span').textContent = `"${currentStatement}"`;
       document.getElementById('defenderNameReminder').textContent = currentDefender;
       showVoter();
+      sync.publish();
     }
 
     function showVoter() {
@@ -274,17 +342,21 @@
     }
 
     function castVote(choice, btn) {
+      if (!ensureCanInteract()) return;
       currentChoice = choice;
       document.querySelectorAll('.vote-btn-aud').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       document.getElementById('confirmBtn').classList.remove('hidden');
+      sync.publish();
     }
 
     function confirmVote() {
+      if (!ensureCanInteract()) return;
       if (!currentChoice) return;
       votes.push({ voter: participants[currentVoterIndex].name, vote: currentChoice });
       currentVoterIndex++;
       showVoter();
+      sync.publish();
     }
 
     function showResults() {
@@ -300,7 +372,9 @@
       const roundScores = {};
       participants.forEach(p => roundScores[p.name] = 0);
       roundScores[currentDefender] = yesCount;
-      saveGameScores('defend', roundScores);
+      if (!isRoomMode() || sync.getHostInfo().isHost) {
+        saveGameScores('defend', roundScores);
+      }
 
       const verdictDiv = document.getElementById('verdictCard');
       verdictDiv.innerHTML = `
@@ -315,12 +389,15 @@
     }
 
     function nextRound() {
+      if (!ensureCanInteract()) return;
       loadRound();
       setPhase(1);
+      sync.publish();
     }
 
     // Init
     loadRound();
+    sync.init();
   </script>
 </body>
 </html>

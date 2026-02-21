@@ -5,9 +5,10 @@ A lightweight, browser-based party games platform built with **HTML, CSS, and Va
 ## Getting Started
 
 1. Open `index.html` in any modern browser
-2. Name your party
-3. Add participants in the lobby
-4. Pick a game and have fun!
+2. Choose mode from `mode-select.html`
+3. Name your party (Single Device) or create/join a room (Room Mode)
+4. Add participants in the lobby
+5. Pick a game and have fun!
 
 ## Included Games
 
@@ -21,8 +22,15 @@ A lightweight, browser-based party games platform built with **HTML, CSS, and Va
 ```
 /party-games-hub
 ├── index.html            # Home screen (party title)
+├── mode-select.html      # Select Single Device or Room Mode
 ├── lobby.html            # Add/remove participants
 ├── games.html            # Games hub grid
+├── /api
+│   ├── create-room.js    # POST: create room code
+│   ├── join-room.js      # POST: join room by code + name
+│   ├── room-state.js     # GET: current room state
+│   ├── update-state.js   # POST: patch room state
+│   └── _storage.js       # KV/in-memory room storage
 ├── /games
 │   ├── brain.html        # Whose Brain Is This?
 │   ├── hot-take.html     # Hot Take Roulette
@@ -65,12 +73,43 @@ Open `js/config.js` and add an entry to the `GAMES` array:
 
 That's it! The games hub will automatically show the new card.
 
+## Play Modes
+
+### Single Device Mode
+- Uses `localStorage` only
+- No backend calls
+- Existing gameplay flow remains unchanged
+
+### Room Mode
+- Uses backend API endpoints under `/api`
+- Stores only room session in `localStorage` (`roomId`, `playerId`, `playerName`)
+- Lobby polls room state every 2.5 seconds
+- Room code is visible with copy-to-clipboard button
+
+## API Endpoints
+
+- `POST /api/create-room`
+- `POST /api/join-room`
+- `GET /api/room-state?roomId=AB7KQ`
+- `POST /api/update-state`
+
 ## Tech Details
 
-- **State**: All data stored in `localStorage` (party title + participants)
+- **State**:
+  - Single mode: `localStorage`
+  - Room mode: shared state via `/api` + local room session cache
 - **Styling**: CSS Grid, Flexbox, CSS custom properties (variables)
 - **No dependencies**: Zero npm packages, zero build steps
 - **Mobile-friendly**: Responsive design for phones and desktops
+
+## Deploying Room Mode on Vercel
+
+- Deploy the `party-games-hub` folder to Vercel.
+- API routes work with in-memory storage by default (demo-friendly).
+- Optional KV support is auto-enabled when these env vars are present:
+  - `KV_REST_API_URL`
+  - `KV_REST_API_TOKEN`
+- Rooms automatically expire after 4 hours of inactivity.
 
 ## Browser Support
 

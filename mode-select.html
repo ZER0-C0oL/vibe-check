@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Mode – Party Games Hub</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    .mode-wrap {
+      width: 100%;
+      max-width: 620px;
+      animation: fadeInUp 0.5s ease both;
+    }
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .mode-card {
+      background: rgba(255,255,255,0.85);
+      border: 2px solid rgba(108,92,231,0.15);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font);
+    }
+    .mode-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+    .mode-card h3 { margin-bottom: 0.35rem; }
+    .mode-card p { color: var(--text-light); font-size: 0.9rem; }
+    .hint {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--text-light);
+      text-align: center;
+    }
+    @media (max-width: 620px) {
+      .mode-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+  <div class="mode-wrap">
+    <div class="card text-center">
+      <h1>🎮 Choose How to Play</h1>
+      <p style="color: var(--text-light); margin-top: 0.5rem;">
+        Pick a mode first. You can switch modes anytime from the Home screen.
+      </p>
+
+      <div class="mode-grid">
+        <button class="mode-card" onclick="chooseSingle()">
+          <h3>📱 Play on One Device</h3>
+          <p>Classic mode: everyone plays on the same phone/laptop using local storage.</p>
+        </button>
+        <button class="mode-card" onclick="chooseRoom()">
+          <h3>🌐 Join or Create a Room</h3>
+          <p>Multiplayer mode: each player uses their own device with a room code.</p>
+        </button>
+      </div>
+
+      <div class="hint">Single Device Mode uses no backend calls.</div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script>
+    function chooseSingle() {
+      setPlayMode('single');
+      clearRoomSession();
+      navigateTo('index.html');
+    }
+
+    function chooseRoom() {
+      setPlayMode('room');
+      navigateTo('lobby.html');
+    }
+  </script>
+</body>
+</html>

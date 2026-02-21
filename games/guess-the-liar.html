@@ -238,6 +238,7 @@
   <script src="../js/state.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/prompts.js"></script>
+  <script src="../js/room-game-sync.js"></script>
   <script>
     const PROMPTS = GAME_PROMPTS['guess-the-liar'];
     const participants = getParticipants();
@@ -248,8 +249,66 @@
     let currentGuess = null;
     let guesses = []; // { guesser, guessedLiar }
     let usedPrompts = [];
+    let currentPhase = 1;
+    let liarRevealed = false;
+    let interactionBlockedAlertShown = false;
+
+    const sync = createRoomGameSync({
+      gameId: 'guess-the-liar',
+      getState: () => ({
+        phase: currentPhase,
+        currentPrompt,
+        liarIndex,
+        currentPlayerIndex,
+        guessVoterIndex,
+        currentGuess,
+        guesses,
+        usedPrompts,
+        liarRevealed,
+        turnName: currentPhase === 2
+          ? (participants[currentPlayerIndex] ? participants[currentPlayerIndex].name : '')
+          : (currentPhase === 3 && participants[guessVoterIndex] ? participants[guessVoterIndex].name : '')
+      }),
+      applyState: (snapshot) => {
+        if (!snapshot || typeof snapshot !== 'object') return;
+        currentPrompt = snapshot.currentPrompt || currentPrompt;
+        liarIndex = Number(snapshot.liarIndex ?? liarIndex);
+        currentPlayerIndex = Number(snapshot.currentPlayerIndex || 0);
+        guessVoterIndex = Number(snapshot.guessVoterIndex || 0);
+        currentGuess = snapshot.currentGuess || null;
+        guesses = Array.isArray(snapshot.guesses) ? snapshot.guesses : [];
+        usedPrompts = Array.isArray(snapshot.usedPrompts) ? snapshot.usedPrompts : usedPrompts;
+        liarRevealed = Boolean(snapshot.liarRevealed);
+
+        const phase = Number(snapshot.phase || 1);
+        setPhase(phase);
+        if (phase === 1) {
+          document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
+        } else if (phase === 2) {
+          document.getElementById('promptReminder').querySelector('span').textContent = `"${currentPrompt}"`;
+          showPlayerRole();
+        } else if (phase === 3) {
+          document.getElementById('promptGuess').querySelector('span').textContent = `"${currentPrompt}"`;
+          showGuesser();
+        } else {
+          showReveal();
+          if (liarRevealed) revealLiar();
+        }
+      }
+    });
+
+    function ensureCanInteract() {
+      if (!isRoomMode()) return true;
+      if (sync.canInteract()) return true;
+      if (!interactionBlockedAlertShown) {
+        alert('Wait for your turn.');
+        interactionBlockedAlertShown = true;
+      }
+      return false;
+    }
 
     function setPhase(n) {
+      currentPhase = n;
       [1,2,3,4].forEach(p => document.getElementById(`phase${p}`).classList.toggle('hidden', p !== n));
     }
     function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -268,14 +327,21 @@
       document.getElementById('promptDisplay').querySelector('span').textContent = `"${currentPrompt}"`;
     }
 
-    function skipPrompt() { loadRound(); }
+    function skipPrompt() {
+      if (!ensureCanInteract()) return;
+      loadRound();
+      sync.publish();
+    }
 
     function startAssigning() {
+      if (!ensureCanInteract()) return;
       liarIndex = Math.floor(Math.random() * participants.length);
       currentPlayerIndex = 0;
+      liarRevealed = false;
       setPhase(2);
       document.getElementById('promptReminder').querySelector('span').textContent = `"${currentPrompt}"`;
       showPlayerRole();
+      sync.publish();
     }
 
     function showPlayerRole() {
@@ -291,6 +357,7 @@
     }
 
     function revealRole() {
+      if (!ensureCanInteract()) return;
       const isLiar = currentPlayerIndex === liarIndex;
       const card = document.getElementById('secretCard');
       card.classList.remove('hidden', 'is-liar');
@@ -301,11 +368,14 @@
         : 'Answer honestly when it\'s your turn to speak.';
       document.getElementById('revealRoleBtn').classList.add('hidden');
       document.getElementById('nextPlayerBtn').classList.remove('hidden');
+      sync.publish();
     }
 
     function nextPlayer() {
+      if (!ensureCanInteract()) return;
       currentPlayerIndex++;
       showPlayerRole();
+      sync.publish();
     }
 
     function startGuessing() {
@@ -315,6 +385,7 @@
       setPhase(3);
       document.getElementById('promptGuess').querySelector('span').textContent = `"${currentPrompt}"`;
       showGuesser();
+      sync.publish();
     }
 
     function showGuesser() {
@@ -333,17 +404,21 @@
     }
 
     function selectLiar(name, btn) {
+      if (!ensureCanInteract()) return;
       currentGuess = name;
       document.querySelectorAll('.vote-option').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       document.getElementById('confirmGuessBtn').classList.remove('hidden');
+      sync.publish();
     }
 
     function confirmGuess() {
+      if (!ensureCanInteract()) return;
       if (!currentGuess) return;
       guesses.push({ guesser: participants[guessVoterIndex].name, guessedLiar: currentGuess });
       guessVoterIndex++;
       showGuesser();
+      sync.publish();
     }
 
     function showReveal() {
@@ -354,9 +429,11 @@
       revealCard.className = 'liar-reveal hidden-liar';
       revealCard.innerHTML = '<div class="label">🔍 Tap to Reveal the Liar</div><div class="name">???</div>';
       document.getElementById('guessResults').classList.add('hidden');
+      liarRevealed = false;
     }
 
     function revealLiar() {
+      if (!ensureCanInteract()) return;
       const liarName = participants[liarIndex].name;
       const revealCard = document.getElementById('liarReveal');
       revealCard.className = 'liar-reveal shown';
@@ -367,6 +444,7 @@
       // Show guess results
       const resultsDiv = document.getElementById('guessResults');
       resultsDiv.classList.remove('hidden');
+      liarRevealed = true;
 
       // Score: 1 point for correct guesses
       const roundScores = {};
@@ -382,16 +460,23 @@
         </div>`;
       }).join('');
 
-      saveGameScores('guess-the-liar', roundScores);
+      if (!isRoomMode() || sync.getHostInfo().isHost) {
+        saveGameScores('guess-the-liar', roundScores);
+      }
+      sync.publish();
     }
 
     function nextRound() {
+      if (!ensureCanInteract()) return;
       loadRound();
       setPhase(1);
+      liarRevealed = false;
+      sync.publish();
     }
 
     // Init
     loadRound();
+    sync.init();
   </script>
 </body>
 </html>

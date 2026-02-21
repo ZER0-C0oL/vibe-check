@@ -224,6 +224,7 @@
   <script src="../js/state.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/prompts.js"></script>
+  <script src="../js/room-game-sync.js"></script>
   <script>
     const PROMPTS = GAME_PROMPTS['would-you-rather'];
     const participants = getParticipants();
@@ -232,8 +233,57 @@
     let currentChoice = null;
     let votes = [];
     let usedIndices = [];
+    let currentPhase = 1;
+    let interactionBlockedAlertShown = false;
+
+    const sync = createRoomGameSync({
+      gameId: 'would-you-rather',
+      getState: () => ({
+        phase: currentPhase,
+        currentQ,
+        currentVoterIndex,
+        currentChoice,
+        votes,
+        usedIndices,
+        turnName: currentPhase === 2 && participants[currentVoterIndex] ? participants[currentVoterIndex].name : ''
+      }),
+      applyState: (snapshot) => {
+        if (!snapshot || typeof snapshot !== 'object') return;
+        currentQ = snapshot.currentQ || currentQ;
+        currentVoterIndex = Number(snapshot.currentVoterIndex || 0);
+        currentChoice = snapshot.currentChoice || null;
+        votes = Array.isArray(snapshot.votes) ? snapshot.votes : [];
+        usedIndices = Array.isArray(snapshot.usedIndices) ? snapshot.usedIndices : usedIndices;
+        const phase = Number(snapshot.phase || 1);
+        setPhase(phase);
+        if (!currentQ) return;
+        if (phase === 1) {
+          document.getElementById('optionADisplay').textContent = currentQ.optionA;
+          document.getElementById('optionBDisplay').textContent = currentQ.optionB;
+        } else if (phase === 2) {
+          document.getElementById('optionARemind').textContent = currentQ.optionA;
+          document.getElementById('optionBRemind').textContent = currentQ.optionB;
+          document.getElementById('voteA').textContent = currentQ.optionA;
+          document.getElementById('voteB').textContent = currentQ.optionB;
+          showVoter();
+        } else {
+          showResults();
+        }
+      }
+    });
+
+    function ensureCanInteract() {
+      if (!isRoomMode()) return true;
+      if (sync.canInteract()) return true;
+      if (!interactionBlockedAlertShown) {
+        alert('Wait for your turn.');
+        interactionBlockedAlertShown = true;
+      }
+      return false;
+    }
 
     function setPhase(n) {
+      currentPhase = n;
       [1,2,3].forEach(p => document.getElementById(`phase${p}`).classList.toggle('hidden', p !== n));
     }
     function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -253,9 +303,14 @@
       document.getElementById('optionBDisplay').textContent = currentQ.optionB;
     }
 
-    function skipPrompt() { loadQuestion(); }
+    function skipPrompt() {
+      if (!ensureCanInteract()) return;
+      loadQuestion();
+      sync.publish();
+    }
 
     function startVoting() {
+      if (!ensureCanInteract()) return;
       votes = [];
       currentVoterIndex = 0;
       currentChoice = null;
@@ -265,6 +320,7 @@
       document.getElementById('voteB').textContent = currentQ.optionB;
       setPhase(2);
       showVoter();
+      sync.publish();
     }
 
     function showVoter() {
@@ -277,17 +333,21 @@
     }
 
     function castVote(choice, btn) {
+      if (!ensureCanInteract()) return;
       currentChoice = choice;
       document.querySelectorAll('.vote-choice').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       document.getElementById('confirmBtn').classList.remove('hidden');
+      sync.publish();
     }
 
     function confirmVote() {
+      if (!ensureCanInteract()) return;
       if (!currentChoice) return;
       votes.push({ name: participants[currentVoterIndex].name, vote: currentChoice });
       currentVoterIndex++;
       showVoter();
+      sync.publish();
     }
 
     function showResults() {
@@ -306,7 +366,9 @@
       const roundScores = {};
       participants.forEach(p => roundScores[p.name] = 0);
       votes.filter(v => v.vote === majorityChoice).forEach(v => { roundScores[v.name] = 1; });
-      saveGameScores('would-you-rather', roundScores);
+      if (!isRoomMode() || sync.getHostInfo().isHost) {
+        saveGameScores('would-you-rather', roundScores);
+      }
 
       document.getElementById('resultBars').innerHTML = `
         <div class="result-bar-item" style="animation-delay: 0s">
@@ -329,12 +391,15 @@
     }
 
     function nextRound() {
+      if (!ensureCanInteract()) return;
       loadQuestion();
       setPhase(1);
+      sync.publish();
     }
 
     // Init
     loadQuestion();
+    sync.init();
   </script>
 </body>
 </html>

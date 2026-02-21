@@ -168,6 +168,7 @@
   <script src="../js/state.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/prompts.js"></script>
+  <script src="../js/room-game-sync.js"></script>
   <script>
     const PROMPTS = GAME_PROMPTS['most-likely'];
     const participants = getParticipants();
@@ -176,8 +177,52 @@
     let currentChoice = null;
     let votes = [];
     let usedPrompts = [];
+    let currentPhase = 1;
+    let interactionBlockedAlertShown = false;
+
+    const sync = createRoomGameSync({
+      gameId: 'most-likely',
+      getState: () => ({
+        phase: currentPhase,
+        currentPrompt,
+        currentVoterIndex,
+        currentChoice,
+        votes,
+        usedPrompts,
+        turnName: currentPhase === 2 && participants[currentVoterIndex] ? participants[currentVoterIndex].name : ''
+      }),
+      applyState: (snapshot) => {
+        if (!snapshot || typeof snapshot !== 'object') return;
+        currentPrompt = snapshot.currentPrompt || currentPrompt;
+        currentVoterIndex = Number(snapshot.currentVoterIndex || 0);
+        currentChoice = snapshot.currentChoice || null;
+        votes = Array.isArray(snapshot.votes) ? snapshot.votes : [];
+        usedPrompts = Array.isArray(snapshot.usedPrompts) ? snapshot.usedPrompts : usedPrompts;
+        const phase = Number(snapshot.phase || 1);
+        setPhase(phase);
+        if (phase === 1) {
+          document.getElementById('promptDisplay').querySelector('span').textContent = `Who's most likely to: "${currentPrompt}"`;
+        } else if (phase === 2) {
+          document.getElementById('promptReminder').querySelector('span').textContent = `Who's most likely to: "${currentPrompt}"`;
+          showVoter();
+        } else {
+          showResults();
+        }
+      }
+    });
+
+    function ensureCanInteract() {
+      if (!isRoomMode()) return true;
+      if (sync.canInteract()) return true;
+      if (!interactionBlockedAlertShown) {
+        alert('Wait for your turn.');
+        interactionBlockedAlertShown = true;
+      }
+      return false;
+    }
 
     function setPhase(n) {
+      currentPhase = n;
       [1,2,3].forEach(p => document.getElementById(`phase${p}`).classList.toggle('hidden', p !== n));
     }
     function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -196,15 +241,21 @@
       document.getElementById('promptDisplay').querySelector('span').textContent = `Who's most likely to: "${currentPrompt}"`;
     }
 
-    function skipPrompt() { loadPrompt(); }
+    function skipPrompt() {
+      if (!ensureCanInteract()) return;
+      loadPrompt();
+      sync.publish();
+    }
 
     function startVoting() {
+      if (!ensureCanInteract()) return;
       votes = [];
       currentVoterIndex = 0;
       currentChoice = null;
       setPhase(2);
       document.getElementById('promptReminder').querySelector('span').textContent = `Who's most likely to: "${currentPrompt}"`;
       showVoter();
+      sync.publish();
     }
 
     function showVoter() {
@@ -221,17 +272,21 @@
     }
 
     function selectTarget(idx, btn) {
+      if (!ensureCanInteract()) return;
       currentChoice = participants[idx].name;
       document.querySelectorAll('.vote-option').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       document.getElementById('confirmBtn').classList.remove('hidden');
+      sync.publish();
     }
 
     function confirmVote() {
+      if (!ensureCanInteract()) return;
       if (!currentChoice) return;
       votes.push({ voter: participants[currentVoterIndex].name, target: currentChoice });
       currentVoterIndex++;
       showVoter();
+      sync.publish();
     }
 
     function showResults() {
@@ -255,7 +310,9 @@
       // Score: each vote received = 1 point
       const roundScores = {};
       participants.forEach(p => roundScores[p.name] = tally[p.name] || 0);
-      saveGameScores('most-likely', roundScores);
+      if (!isRoomMode() || sync.getHostInfo().isHost) {
+        saveGameScores('most-likely', roundScores);
+      }
 
       const list = document.getElementById('resultsList');
       list.innerHTML = sorted.map(([name, count], i) => {
@@ -274,12 +331,15 @@
     }
 
     function nextRound() {
+      if (!ensureCanInteract()) return;
       loadPrompt();
       setPhase(1);
+      sync.publish();
     }
 
     // Init
     loadPrompt();
+    sync.init();
   </script>
 </body>
 </html>

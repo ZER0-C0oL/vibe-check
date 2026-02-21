@@ -212,6 +212,7 @@
   <script src="../js/state.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/prompts.js"></script>
+  <script src="../js/room-game-sync.js"></script>
   <script>
     /* ---- Statements pool ---- */
     const STATEMENTS = GAME_PROMPTS['hot-take'];
@@ -223,9 +224,52 @@
     let currentVoteChoice = null;
     let votes = [];  // { name, vote }
     let usedStatements = [];
+    let currentPhase = 1;
+    let interactionBlockedAlertShown = false;
+
+    const sync = createRoomGameSync({
+      gameId: 'hot-take',
+      getState: () => ({
+        phase: currentPhase,
+        currentStatement,
+        currentVoterIndex,
+        currentVoteChoice,
+        votes,
+        usedStatements,
+        turnName: currentPhase === 2 && participants[currentVoterIndex] ? participants[currentVoterIndex].name : ''
+      }),
+      applyState: (snapshot) => {
+        if (!snapshot || typeof snapshot !== 'object') return;
+        currentStatement = snapshot.currentStatement || currentStatement;
+        currentVoterIndex = Number(snapshot.currentVoterIndex || 0);
+        currentVoteChoice = snapshot.currentVoteChoice || null;
+        votes = Array.isArray(snapshot.votes) ? snapshot.votes : [];
+        usedStatements = Array.isArray(snapshot.usedStatements) ? snapshot.usedStatements : usedStatements;
+        const phase = Number(snapshot.phase || 1);
+        setPhase(phase);
+        if (phase === 1) {
+          document.getElementById('statementDisplay').textContent = `"${currentStatement}"`;
+        } else if (phase === 2) {
+          showVoter();
+        } else {
+          showResults();
+        }
+      }
+    });
+
+    function ensureCanInteract() {
+      if (!isRoomMode()) return true;
+      if (sync.canInteract()) return true;
+      if (!interactionBlockedAlertShown) {
+        alert('Wait for your turn.');
+        interactionBlockedAlertShown = true;
+      }
+      return false;
+    }
 
     /* ---- Phase helpers ---- */
     function setPhase(num) {
+      currentPhase = num;
       [1, 2, 3].forEach(n => {
         document.getElementById(`phase${n}`).classList.toggle('hidden', n !== num);
       });
@@ -251,16 +295,20 @@
     document.getElementById('statementDisplay').textContent = `"${currentStatement}"`;
 
     function skipStatement() {
+      if (!ensureCanInteract()) return;
       currentStatement = pickStatement();
       document.getElementById('statementDisplay').textContent = `"${currentStatement}"`;
+      sync.publish();
     }
 
     function startVoting() {
+      if (!ensureCanInteract()) return;
       votes = [];
       currentVoterIndex = 0;
       currentVoteChoice = null;
       setPhase(2);
       showVoter();
+      sync.publish();
     }
 
     /* ---- Phase 2: Voting ---- */
@@ -278,17 +326,21 @@
     }
 
     function castVote(choice, btn) {
+      if (!ensureCanInteract()) return;
       currentVoteChoice = choice;
       document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       document.getElementById('confirmVoteBtn').classList.remove('hidden');
+      sync.publish();
     }
 
     function confirmVote() {
+      if (!ensureCanInteract()) return;
       if (!currentVoteChoice) return;
       votes.push({ name: participants[currentVoterIndex].name, vote: currentVoteChoice });
       currentVoterIndex++;
       showVoter();
+      sync.publish();
     }
 
     /* ---- Phase 3: Results ---- */
@@ -322,7 +374,9 @@
       votersByChoice[majorityChoice].forEach(name => {
         roundScores[name] = 1;
       });
-      saveGameScores('hot-take', roundScores);
+      if (!isRoomMode() || sync.getHostInfo().isHost) {
+        saveGameScores('hot-take', roundScores);
+      }
 
       // Summary
       const summaryDiv = document.getElementById('votesSummary');
@@ -373,13 +427,17 @@
     }
 
     function nextRound() {
+      if (!ensureCanInteract()) return;
       currentStatement = pickStatement();
       document.getElementById('statementDisplay').textContent = `"${currentStatement}"`;
       votes = [];
       currentVoterIndex = 0;
       currentVoteChoice = null;
       setPhase(1);
+      sync.publish();
     }
+
+    sync.init();
   </script>
 </body>
 </html>

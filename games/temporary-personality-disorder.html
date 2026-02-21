@@ -314,6 +314,7 @@
   <script src="../js/state.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/prompts.js"></script>
+  <script src="../js/room-game-sync.js"></script>
   <script>
     /* ---- Prompts & participants ---- */
     const PROMPTS = GAME_PROMPTS['personality-disorder'];
@@ -325,6 +326,55 @@
     let completedRoles = []; // same shape + status
     let assignCounter = 0;
     let timerInterval = null;
+    let interactionBlockedAlertShown = false;
+
+    const sync = createRoomGameSync({
+      gameId: 'personality-disorder',
+      getState: () => ({
+        usedPromptIndices,
+        activeRoles,
+        completedRoles,
+        assignCounter,
+        turnName: ''
+      }),
+      applyState: (snapshot) => {
+        if (!snapshot || typeof snapshot !== 'object') return;
+        usedPromptIndices = Array.isArray(snapshot.usedPromptIndices) ? snapshot.usedPromptIndices : usedPromptIndices;
+        activeRoles = Array.isArray(snapshot.activeRoles) ? snapshot.activeRoles : [];
+        completedRoles = Array.isArray(snapshot.completedRoles) ? snapshot.completedRoles : [];
+        assignCounter = Number(snapshot.assignCounter || 0);
+
+        const hasActiveOrCompleted = activeRoles.length > 0 || completedRoles.length > 0;
+        document.getElementById('introCard').classList.toggle('hidden', hasActiveOrCompleted);
+        document.getElementById('assignmentArea').classList.toggle('hidden', !hasActiveOrCompleted);
+        document.getElementById('assignBtn').classList.toggle('hidden', hasActiveOrCompleted);
+        document.getElementById('assignedActions').classList.toggle('hidden', !hasActiveOrCompleted);
+        if (hasActiveOrCompleted) {
+          document.getElementById('assignedActions').style.display = 'flex';
+        }
+
+        if (activeRoles.length > 0) {
+          const latest = activeRoles[activeRoles.length - 1];
+          document.getElementById('playerName').textContent = latest.player;
+          document.getElementById('taskText').textContent = latest.task;
+          document.getElementById('durationBadge').textContent = `⏱ ${latest.duration}`;
+        }
+
+        renderActiveRoles();
+        renderHistory();
+        ensureTimerLoop();
+      }
+    });
+
+    function ensureCanInteract() {
+      if (!isRoomMode()) return true;
+      if (sync.canInteract()) return true;
+      if (!interactionBlockedAlertShown) {
+        alert('Only the host can control this round.');
+        interactionBlockedAlertShown = true;
+      }
+      return false;
+    }
 
     /* ---- Helpers ---- */
     function escapeHTML(str) {
@@ -396,6 +446,7 @@
 
     /* ---- Assign a role ---- */
     function assignRole() {
+      if (!ensureCanInteract()) return;
       if (participants.length === 0) {
         alert('No participants found! Go back to the lobby and add players.');
         return;
@@ -447,10 +498,12 @@
 
       renderActiveRoles();
       ensureTimerLoop();
+      sync.publish();
     }
 
     /* ---- Skip: re-roll player + prompt without adding to active ---- */
     function skipRole() {
+      if (!ensureCanInteract()) return;
       // Remove the last assigned role (the one currently displayed) from active
       if (activeRoles.length > 0) {
         const lastRole = activeRoles[activeRoles.length - 1];
@@ -498,10 +551,12 @@
 
       renderActiveRoles();
       ensureTimerLoop();
+      sync.publish();
     }
 
     /* ---- Mark role as complete ---- */
     function completeRole(roleId) {
+      if (!ensureCanInteract()) return;
       const idx = activeRoles.findIndex(r => r.id === roleId);
       if (idx === -1) return;
 
@@ -510,17 +565,21 @@
       completedRoles.push(role);
 
       // Award a point
-      saveGameScores('personality-disorder', { [role.player]: 1 });
+      if (!isRoomMode() || sync.getHostInfo().isHost) {
+        saveGameScores('personality-disorder', { [role.player]: 1 });
+      }
 
       // Mini confetti
       spawnConfetti();
 
       renderActiveRoles();
       renderHistory();
+      sync.publish();
     }
 
     /* ---- Mark role as failed ---- */
     function failRole(roleId) {
+      if (!ensureCanInteract()) return;
       const idx = activeRoles.findIndex(r => r.id === roleId);
       if (idx === -1) return;
 
@@ -530,6 +589,7 @@
 
       renderActiveRoles();
       renderHistory();
+      sync.publish();
     }
 
     /* ---- Render active roles ---- */
@@ -593,6 +653,7 @@
 
     /* ---- Init ---- */
     renderHistory();
+    sync.init();
   </script>
 </body>
 </html>

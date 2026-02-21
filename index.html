@@ -63,6 +63,14 @@
   <script src="js/state.js"></script>
   <script src="js/utils.js"></script>
   <script>
+    const rawMode = localStorage.getItem('pgh_playMode');
+    if (!rawMode) {
+      navigateTo('mode-select.html');
+    }
+    if (getPlayMode() === 'room') {
+      navigateTo('lobby.html');
+    }
+
     const titleInput = document.getElementById('titleInput');
     const titleDisplay = document.getElementById('titleDisplay');
 
@@ -83,6 +91,7 @@
       // Ensure title is saved
       const val = titleInput.value.trim();
       if (val) setPartyTitle(val);
+      setPlayMode('single');
       navigateTo('lobby.html');
     }
   </script>

@@ -111,6 +111,11 @@
       color: var(--danger);
       font-size: 0.85rem;
     }
+    .room-choice-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .room-choice-actions .btn { flex: 1; }
 
     @media (max-width: 500px) {
       .form-row {
@@ -145,26 +150,55 @@
       <div class="host-note" id="hostNote"></div>
     </div>
 
-    <div class="card mb-3 hidden" id="roomConnectCard">
+    <div class="card mb-3 hidden" id="roomChoiceCard">
       <h3>Join or Create a Room</h3>
       <p style="color: var(--text-light); font-size: 0.9rem; margin: 0.25rem 0 0.9rem;">
-        Enter your name, then create a room or join using a room code.
+        Choose how you want to connect. We'll ask for your name next.
+      </p>
+      <div class="room-choice-actions">
+        <button class="btn btn-secondary" onclick="showRoomStep('create')">Create Room</button>
+        <button class="btn btn-primary" onclick="showRoomStep('join')">Join Room</button>
+      </div>
+    </div>
+
+    <div class="card mb-3 hidden" id="roomCreateCard">
+      <h3>Create a Room</h3>
+      <p style="color: var(--text-light); font-size: 0.9rem; margin: 0.25rem 0 0.9rem;">
+        Enter your name to generate a 5-character room code.
       </p>
       <div class="form-row">
         <div class="form-group">
-          <label for="roomPlayerName">Your Name</label>
-          <input type="text" id="roomPlayerName" placeholder="Enter your name..." maxlength="30" />
-        </div>
-        <div class="form-group" style="flex: 0.7;">
-          <label for="roomCodeInput">Room Code</label>
-          <input type="text" id="roomCodeInput" placeholder="AB7KQ" maxlength="6" style="text-transform: uppercase;" />
+          <label for="roomCreateName">Your Name</label>
+          <input type="text" id="roomCreateName" placeholder="Enter your name..." maxlength="30" />
         </div>
       </div>
       <div class="form-row mt-2">
-        <button class="btn btn-secondary" style="flex:1" onclick="handleCreateRoom()">Create Room</button>
-        <button class="btn btn-primary" style="flex:1" onclick="handleJoinRoom()">Join Room</button>
+        <button class="btn btn-primary" style="flex:1" onclick="handleCreateRoom()">Create Room</button>
+        <button class="btn btn-outline" style="flex:1" onclick="showRoomStep('choice')">Back</button>
       </div>
-      <div class="error-msg" id="roomError"></div>
+      <div class="error-msg" id="roomCreateError"></div>
+    </div>
+
+    <div class="card mb-3 hidden" id="roomJoinCard">
+      <h3>Join a Room</h3>
+      <p style="color: var(--text-light); font-size: 0.9rem; margin: 0.25rem 0 0.9rem;">
+        Enter your name and the room code from the host.
+      </p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="roomJoinName">Your Name</label>
+          <input type="text" id="roomJoinName" placeholder="Enter your name..." maxlength="30" />
+        </div>
+        <div class="form-group" style="flex: 0.7;">
+          <label for="roomJoinCode">Room Code</label>
+          <input type="text" id="roomJoinCode" placeholder="AB7KQ" maxlength="6" style="text-transform: uppercase;" />
+        </div>
+      </div>
+      <div class="form-row mt-2">
+        <button class="btn btn-primary" style="flex:1" onclick="handleJoinRoom()">Join Room</button>
+        <button class="btn btn-outline" style="flex:1" onclick="showRoomStep('choice')">Back</button>
+      </div>
+      <div class="error-msg" id="roomJoinError"></div>
     </div>
 
     <div class="card mb-3" id="singleAddCard">
@@ -210,10 +244,14 @@
     const mode = getPlayMode();
     const modeLabel = document.getElementById('modeLabel');
     const roomInfoCard = document.getElementById('roomInfoCard');
-    const roomConnectCard = document.getElementById('roomConnectCard');
-    const roomError = document.getElementById('roomError');
-    const roomPlayerName = document.getElementById('roomPlayerName');
-    const roomCodeInput = document.getElementById('roomCodeInput');
+    const roomChoiceCard = document.getElementById('roomChoiceCard');
+    const roomCreateCard = document.getElementById('roomCreateCard');
+    const roomJoinCard = document.getElementById('roomJoinCard');
+    const roomCreateName = document.getElementById('roomCreateName');
+    const roomJoinName = document.getElementById('roomJoinName');
+    const roomJoinCode = document.getElementById('roomJoinCode');
+    const roomCreateError = document.getElementById('roomCreateError');
+    const roomJoinError = document.getElementById('roomJoinError');
     const roomCodeText = document.getElementById('roomCodeText');
     const hostNote = document.getElementById('hostNote');
     const subTitle = document.getElementById('subTitle');
@@ -228,6 +266,7 @@
 
     let roomPollTimer = null;
     let currentRoomStateHash = '';
+    let roomStep = 'choice';
 
     document.getElementById('partyTitle').textContent = getPartyTitle();
 
@@ -246,8 +285,19 @@
         modeLabel.innerHTML = '<span class="mode-pill">Single Device Mode</span>';
         subTitle.textContent = 'Add your crew below';
         roomInfoCard.classList.add('hidden');
-        roomConnectCard.classList.add('hidden');
+        roomChoiceCard.classList.add('hidden');
+        roomCreateCard.classList.add('hidden');
+        roomJoinCard.classList.add('hidden');
       }
+    }
+
+    function showRoomStep(step) {
+      roomStep = step;
+      roomChoiceCard.classList.toggle('hidden', step !== 'choice');
+      roomCreateCard.classList.toggle('hidden', step !== 'create');
+      roomJoinCard.classList.toggle('hidden', step !== 'join');
+      roomCreateError.textContent = '';
+      roomJoinError.textContent = '';
     }
 
     function renderParticipants(participants, removable = true) {
@@ -294,11 +344,11 @@
     }
 
     async function handleCreateRoom() {
-      roomError.textContent = '';
-      const playerName = roomPlayerName.value.trim();
+      roomCreateError.textContent = '';
+      const playerName = roomCreateName.value.trim();
       if (!playerName) {
-        roomError.textContent = 'Enter your name first.';
-        roomPlayerName.focus();
+        roomCreateError.textContent = 'Enter your name first.';
+        roomCreateName.focus();
         return;
       }
 
@@ -311,23 +361,23 @@
         await syncRoomState();
         startRoomPolling();
       } catch (error) {
-        roomError.textContent = error.message || 'Unable to create room.';
+        roomCreateError.textContent = error.message || 'Unable to create room.';
       }
     }
 
     async function handleJoinRoom() {
-      roomError.textContent = '';
-      const playerName = roomPlayerName.value.trim();
-      const roomId = roomCodeInput.value.trim().toUpperCase();
+      roomJoinError.textContent = '';
+      const playerName = roomJoinName.value.trim();
+      const roomId = roomJoinCode.value.trim().toUpperCase();
 
       if (!playerName) {
-        roomError.textContent = 'Enter your name first.';
-        roomPlayerName.focus();
+        roomJoinError.textContent = 'Enter your name first.';
+        roomJoinName.focus();
         return;
       }
       if (!roomId) {
-        roomError.textContent = 'Enter a room code.';
-        roomCodeInput.focus();
+        roomJoinError.textContent = 'Enter a room code.';
+        roomJoinCode.focus();
         return;
       }
 
@@ -337,7 +387,7 @@
         await syncRoomState();
         startRoomPolling();
       } catch (error) {
-        roomError.textContent = error.message || 'Unable to join room.';
+        roomJoinError.textContent = error.message || 'Unable to join room.';
       }
     }
 
@@ -345,7 +395,9 @@
       const session = getRoomSession();
       if (!session.roomId || !session.playerId) {
         roomInfoCard.classList.add('hidden');
-        roomConnectCard.classList.remove('hidden');
+        if (roomStep !== 'create' && roomStep !== 'join') {
+          showRoomStep('choice');
+        }
         continueBtn.disabled = true;
         continueBtn.classList.remove('btn-primary');
         continueBtn.classList.add('btn-outline');
@@ -365,7 +417,9 @@
       renderParticipants(players, false);
 
       roomInfoCard.classList.remove('hidden');
-      roomConnectCard.classList.add('hidden');
+      roomChoiceCard.classList.add('hidden');
+      roomCreateCard.classList.add('hidden');
+      roomJoinCard.classList.add('hidden');
       roomCodeText.textContent = state.roomId;
 
       const isHost = state.hostId === session.playerId;
@@ -386,6 +440,8 @@
       if (roomPollTimer) return;
       roomPollTimer = setInterval(async () => {
         try {
+          const session = getRoomSession();
+          if (!session.roomId || !session.playerId) return;
           await syncRoomState();
         } catch {
           // Ignore transient polling errors.
@@ -425,17 +481,28 @@
       });
     }
 
-    roomCodeInput.addEventListener('input', () => {
-      roomCodeInput.value = roomCodeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    });
+    if (roomCreateName) {
+      roomCreateName.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleCreateRoom();
+      });
+    }
+
+    if (roomJoinName) {
+      roomJoinName.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleJoinRoom();
+      });
+    }
+
+    if (roomJoinCode) {
+      roomJoinCode.addEventListener('input', () => {
+        roomJoinCode.value = roomJoinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      });
+    }
 
     setModeUI();
 
     if (mode === 'room') {
-      syncRoomState().catch(() => {
-        roomError.textContent = 'Unable to connect. Check backend deployment and try again.';
-      });
-      startRoomPolling();
+      showRoomStep('choice');
     } else {
       renderParticipants(getParticipants(), true);
     }

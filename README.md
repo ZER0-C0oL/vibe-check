@@ -2,6 +2,12 @@
 
 A lightweight, browser-based party games platform built with **HTML, CSS, and Vanilla JavaScript**. No frameworks, no build tools — just open `index.html` and play!
 
+## At a Glance
+
+- Single Device and Room (multiplayer) modes
+- Zero build tools and no runtime dependencies
+- Room mode uses Vercel serverless APIs with optional KV storage
+
 ## Getting Started
 
 1. Open `index.html` in any modern browser
@@ -16,6 +22,12 @@ A lightweight, browser-based party games platform built with **HTML, CSS, and Va
 | --- | --- | --- |
 | **Whose Brain Is This?** | Anonymous answers + wild guessing | 3 |
 | **Hot Take Roulette** | Spicy opinions, voting, and chaos | 3 |
+| **This You?** | Vote on who fits the prompt best | 3 |
+| **Defend the Undefendable** | One player defends a ridiculous statement | 2 |
+| **Would You Rather?** | Two impossible choices, pick a side | 2 |
+| **Guess the Liar** | One player lies, everyone guesses | 3 |
+| **Who's Most Likely To** | Vote on who fits the scenario | 3 |
+| **Temporary Personality Disorder** | Timed role assignments with tasks | 2 |
 
 ## Project Structure
 
@@ -34,6 +46,12 @@ A lightweight, browser-based party games platform built with **HTML, CSS, and Va
 ├── /games
 │   ├── brain.html        # Whose Brain Is This?
 │   ├── hot-take.html     # Hot Take Roulette
+│   ├── this-you.html     # This You?
+│   ├── defend.html       # Defend the Undefendable
+│   ├── would-you-rather.html # Would You Rather?
+│   ├── guess-the-liar.html   # Guess the Liar
+│   ├── most-likely.html       # Who's Most Likely To
+│   ├── temporary-personality-disorder.html # Temporary Personality Disorder
 │   └── template.html     # Boilerplate for new games
 ├── /css
 │   ├── global.css        # Base styles
@@ -41,6 +59,7 @@ A lightweight, browser-based party games platform built with **HTML, CSS, and Va
 ├── /js
 │   ├── state.js          # Global app state (localStorage)
 │   ├── config.js         # Games registry
+│   ├── room-game-sync.js # Room mode sync helper
 │   └── utils.js          # Helper functions
 └── README.md
 ```
